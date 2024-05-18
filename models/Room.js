@@ -1,14 +1,28 @@
 const mongoose = require('mongoose');                                // model de la room
 
+const itemSchema = mongoose.Schema({                                 
+	                                     
+	field: String, 																// à quel dommaine appartient le travaux
+	difficulty: Number, 
+	diy: Boolean,
+	artisan: {type: mongoose.Schema.Types.ObjectId, ref:'artisan'},         //[{ cle etrangere sur la collection team}]
+	teammates: [{type: mongoose.Schema.Types.ObjectId, ref:'teammates'}],         //[{ cle etrangere sur la collection team}]         
+
+});
+
+
+
+
 const roomSchema = mongoose.Schema({                                 
-	                                      
-	roomName: String,
-    worksPost: Object,   // [{name:String, level: Number, DIYorPRO: Boolean }, inserer d'autre objets si plusieurs poste de travaux ] 
+	 
+	type: String,
+	name: String,
+    items: [itemSchema],   // [{name:String, level: Number, DIYorPRO: Boolean }, inserer d'autre objets si plusieurs poste de travaux ] 
     surface: Number,
-	priority: Boolean,
+	pinned: Boolean,  		// par défaut à false
     comment: String,
-	contacts: Object,    // [{cle etrangère sur la collection contact}]
-	team:Object,         //[{ cle etrangere sur la collection team}]
+	artisans: [{type: mongoose.Schema.Types.ObjectId, ref:'contacts'}],    // [{cle etrangère sur la collection contact}]
+	project: {type: mongoose.Schema.Types.ObjectId, ref:'project'}
 });
 
 const Room = mongoose.model('rooms', roomSchema);
