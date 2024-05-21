@@ -4,6 +4,7 @@ const teamSchema = mongoose.Schema({
 	                                      
     colleagueName: [String],
     
+    
 });
 
 const Team = mongoose.model('teams', teamSchema);
