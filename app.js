@@ -8,6 +8,11 @@ var logger = require('morgan');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users'); // Ajouter si vous voulez créer un nouveau fichier de route
+var projectsRouter = require('./routes/projects');
+var roomsRouter = require('./routes/rooms');
+var skillsRouter = require('./routes/skills');
+var artisansRouter = require('./routes/artisans');
+var teammatesRouter = require('./routes/teammates');
 
 var app = express();
 
@@ -40,5 +45,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter); // Ajouter si vous voulez créer un nouveau fichier de route
+app.use('/projects', projectsRouter);
+app.use('/rooms', roomsRouter);
+app.use('/skills', skillsRouter);
+app.use('/artisans', artisansRouter);
+app.use('/teammates', teammatesRouter);
 
 module.exports = app;

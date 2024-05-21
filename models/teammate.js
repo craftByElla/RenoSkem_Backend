@@ -3,7 +3,8 @@ const mongoose = require('mongoose');                                // modèle 
 const teammateSchema = mongoose.Schema({                                 
 	                                      
     name: String,
-    item: [{type: mongoose.Schema.Types.ObjectId, ref:'item'}],
+    avatar: {type: String, default: null},
+    items: {type: [{type: mongoose.Schema.Types.ObjectId, ref:'item'}], default: null},
     skills: {type: mongoose.Schema.Types.ObjectId, ref:'skills'}
     
 });

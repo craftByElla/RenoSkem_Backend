@@ -1,24 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User'); // Importe le modèle User
+//const User = require('../models/User'); // Importe le modèle User
 const bcrypt = require('bcryptjs'); // Pour le hachage des mots de passe
 const jwt = require('jsonwebtoken'); // Pour la génération de tokens JWT
 const uid2 = require('uid2'); // Pour générer un token unique lors de l'inscription
 const secret_key_JWT = process.env.JWT_SECRET_KEY;
 
 require('../models/connection');
-const User = require('../models/users');
+const User = require('../models/user');
 
-const { checkBody } = require('../modules/checkBody');
+//const { checkBody } = require('../modules/checkBody');
 
-
+/*
 router.post('/postUser', (req, res) => {
-  if (!checkBody(req.body, ['username', 'email', 'password', 'skills'])) {
+  if (!checkBody(req.body, ['name', 'email', 'password', 'skills'])) {
     res.json({ result: false, error: 'Missing or empty fields' });
     return;
   }
       const newUser = new User({
-        username: req.body.username,
+        name: req.body.name,
         email: req.body.email,
         password: req.body.password,
         avatar: req.body.avatar,
@@ -31,14 +31,130 @@ router.post('/postUser', (req, res) => {
     })
 
     
-    router.get("/getUser/:email", (req, res) => { 
-      User.findOne({email: req.params.email}).then(data => {
+    router.get("/getUser/:id", (req, res) => { 
+      User.findOne({_id: req.params.id}).populate('skills').then(data => {
         res.json({ result: data });
       });
     });
     
+*/
+    router.get("/getUser/:id", async (req, res) => {
+      try {
+        const user = await User.findOne({ _id: req.params.id }).populate('skills');
+    
+        if (!user) {
+          return res.status(401).json({ message: 'User not found' });
+        }
+    
+        res.status(200).json({ message: 'User found', user: user });
+      } catch (error) {
+        res.status(500).json({ message: 'Error during search', error });
+      }
+    });
+
+/*
+
+    router.put("/editUser/:id/:name/:avatar", (req, res) => { 
+      User.findOne({_id: req.params.id}).then(data => {
+        User.updateOne({_id: req.params.id},
+               {
+                name: req.params.name,
+                email: req.params.email,
+                password: bcrypt.hash(req.params.password, 10),
+                avatar: req.params.avatar,
+                skills: req.params.skills
+          }).then(
+            res.json({ result: true})
+          )
+      })
+    })
+
+    */
+
+    router.put("/editUSer/:id/:name/:avatar/", async (req, res) => {
+      try {
+        //const user = await User.findOne({ _id: req.params.id });
+        const user = await User.findByIdAndUpdate({ _id: req.params.id }, { name: req.params.name, avatar: req.params.avatar }, {new: true});
+    
+        if (!user) {
+          return res.status(401).json({ message: 'User not found' });
+        }
+
+        //await User.updateOne({ _id: req.params.id }, { name: req.params.name, avatar: req.params.avatar });
+    
+        res.status(200).json({ message: 'User profile updated successfully', user: user });
+      } catch (error) {
+        res.status(500).json({ message: 'Error during update', error });
+      }
+    });
+
+/*
+    router.put("/changePassword/:id/:password/", (req, res) => { 
+      User.findOne({_id: req.params.id}).then(data => {
+        User.updateOne({_id: req.params.id}, {password: bcrypt.hash(req.params.password, 10)})
+          .then(
+            res.json({ result: true})
+          )
+      })
+    })
 
 
+    router.put("/changePassword/:id/:password/", (req, res) => { 
+      if(User.findOne({ _id: req.params.id })){
+        User.updateOne({_id: req.params.id}, {password: bcrypt.hash(req.params.password, 10)})
+          .then(
+            res.json({ message: 'Password changed successfully' })
+          )
+      } else {
+        res.json({ message: 'User not found' })
+      }
+    })
+*/
+
+    router.put("/changePassword/:id/:password/", async (req, res) => {
+      try {
+        const user = await User.findByIdAndUpdate({ _id: req.params.id }, {password: bcrypt.hash(req.params.password, 10)}, {new: true});
+    
+        if (!user) {
+          return res.status(401).json({ message: 'User not found' });
+        }
+
+        //User.updateOne({_id: req.params.id}, {password: bcrypt.hash(req.params.password, 10)});
+    
+        res.status(200).json({ message: 'Password changed successfully', user: user });
+      } catch (error) {
+        res.status(500).json({ message: 'Error during password change', error });
+      }
+    });
+
+/*
+    router.put("/changeEmail/:id/:email/", (req, res) => {  // vérifier que le mail n'est pas déjà utilisé qqpart ds la DB ?
+      User.findOne({_id: req.params.id}).then(() => {
+          User.updateOne({_id: req.params.id}, {email: req.params.email})
+          .then(
+            res.json({ result: true})
+          )
+      })
+    })
+*/
+
+    router.put("/changeEmail/:id/:email/", async (req, res) => {
+      try {
+        const user = await User.findByIdAndUpdate({ _id: req.params.id }, {email: req.params.email}, {new: true});
+
+        if (!user) {
+          return res.status(401).json({ message: 'User not found' });
+        }
+
+       // await User.updateOne({_id: req.params.id}, {email: req.params.email});
+    
+        res.status(200).json({ message: 'Email changed successfully', user: user });
+      } catch (error) {
+        res.status(500).json({ message: 'Error during email change', error });
+      }
+    });
+
+/*
 router.delete("/deleteUser/:id", (req, res) => { 
   User.findOne({_id: req.params.id}).then(data => {
     User.deleteOne(data).then(
@@ -46,6 +162,27 @@ router.delete("/deleteUser/:id", (req, res) => {
         )
     })
   })
+*/
+
+
+  router.delete("/deleteUser/:id", async (req, res) => {
+    try {
+      const user = await User.findByIdAndDelete({ _id: req.params.id });
+  
+      if (!user) {
+        return res.status(401).json({ message: 'User not found' });
+      }
+
+      //await User.deleteOne({_id: req.params.id});
+  
+      res.status(200).json({ message: 'User account deleted successfully', user: user });
+    } catch (error) {
+      res.status(500).json({ message: 'Error during deletion', error });
+    }
+  });
+  
+
+
 
 //----ROUTE INSCRIPTION UTILISATEUR-----------//
 router.post('/signup', async (req, res) => {
@@ -55,7 +192,7 @@ router.post('/signup', async (req, res) => {
 
     // Création du nouvel utilisateur avec un token unique
     const newUser = new User({
-      username: req.body.username,
+      name: req.body.name,
       email: req.body.email,
       password: hashedPassword,
       avatar: req.body.avatar,
@@ -78,7 +215,7 @@ router.post('/signup', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     // Recherche de l'utilisateur par son nom d'utilisateur
-    const user = await User.findOne({ username: req.body.username });
+    const user = await User.findOne({ name: req.body.name });
 
     // Si l'utilisateur n'existe pas ou le mot de passe ne correspond pas
     if (!user || !(await bcrypt.compare(req.body.password, user.password))) {
@@ -89,7 +226,7 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign({ id: user._id }, secret_key_JWT);
 
     // Réponse avec le token JWT
-    res.json({ message: 'Login successful', token: token, username: user.username });
+    res.json({ message: 'Login successful', token: token, name: user.name });
   } catch (error) {
     // Gestion des erreurs
     res.status(500).json({ message: 'Error during login', error });
