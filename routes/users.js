@@ -10,67 +10,23 @@ require('../models/connection');
 const User = require('../models/user');
 const Skills = require('../models/skills')
 
-//const { checkBody } = require('../modules/checkBody');
-
-/*
-router.post('/postUser', (req, res) => {
-  if (!checkBody(req.body, ['name', 'email', 'password', 'skills'])) {
-    res.json({ result: false, error: 'Missing or empty fields' });
-    return;
+//--------GET USER---------// récupère les infos d'un utilisateur
+router.get("/getUser/:id", async (req, res) => {
+  try {
+    const user = await User.findOne({ _id: req.params.id }).populate('skills');
+    
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+    
+    res.status(200).json({ message: 'User found', user: user });
+  } 
+  catch (error) {
+    res.status(500).json({ message: 'Error during search', error });
   }
-      const newUser = new User({
-        name: req.body.name,
-        email: req.body.email,
-        password: req.body.password,
-        avatar: req.body.avatar,
-        skills: req.body.skills
-      });
+});
 
-      newUser.save().then(data => {
-        res.json({ result: data});
-      });
-    })
 
-    
-    router.get("/getUser/:id", (req, res) => { 
-      User.findOne({_id: req.params.id}).populate('skills').then(data => {
-        res.json({ result: data });
-      });
-    });
-    
-*/
-    router.get("/getUser/:id", async (req, res) => {
-      try {
-        const user = await User.findOne({ _id: req.params.id }).populate('skills');
-    
-        if (!user) {
-          return res.status(401).json({ message: 'User not found' });
-        }
-    
-        res.status(200).json({ message: 'User found', user: user });
-      } catch (error) {
-        res.status(500).json({ message: 'Error during search', error });
-      }
-    });
-
-/*
-
-    router.put("/editUser/:id/:name/:avatar", (req, res) => { 
-      User.findOne({_id: req.params.id}).then(data => {
-        User.updateOne({_id: req.params.id},
-               {
-                name: req.params.name,
-                email: req.params.email,
-                password: bcrypt.hash(req.params.password, 10),
-                avatar: req.params.avatar,
-                skills: req.params.skills
-          }).then(
-            res.json({ result: true})
-          )
-      })
-    })
-
-    */
 
     router.put("/editUSer/:id/:name/:avatar/", async (req, res) => {
       try {
@@ -89,28 +45,7 @@ router.post('/postUser', (req, res) => {
       }
     });
 
-/*
-    router.put("/changePassword/:id/:password/", (req, res) => { 
-      User.findOne({_id: req.params.id}).then(data => {
-        User.updateOne({_id: req.params.id}, {password: bcrypt.hash(req.params.password, 10)})
-          .then(
-            res.json({ result: true})
-          )
-      })
-    })
 
-
-    router.put("/changePassword/:id/:password/", (req, res) => { 
-      if(User.findOne({ _id: req.params.id })){
-        User.updateOne({_id: req.params.id}, {password: bcrypt.hash(req.params.password, 10)})
-          .then(
-            res.json({ message: 'Password changed successfully' })
-          )
-      } else {
-        res.json({ message: 'User not found' })
-      }
-    })
-*/
 
     router.put("/changePassword/:id/:password/", async (req, res) => {
       try {
@@ -128,16 +63,7 @@ router.post('/postUser', (req, res) => {
       }
     });
 
-/*
-    router.put("/changeEmail/:id/:email/", (req, res) => {  // vérifier que le mail n'est pas déjà utilisé qqpart ds la DB ?
-      User.findOne({_id: req.params.id}).then(() => {
-          User.updateOne({_id: req.params.id}, {email: req.params.email})
-          .then(
-            res.json({ result: true})
-          )
-      })
-    })
-*/
+
 
     router.put("/changeEmail/:id/:email/", async (req, res) => {
       try {
@@ -155,15 +81,6 @@ router.post('/postUser', (req, res) => {
       }
     });
 
-/*
-router.delete("/deleteUser/:id", (req, res) => { 
-  User.findOne({_id: req.params.id}).then(data => {
-    User.deleteOne(data).then(
-          res.json({ result: true})
-        )
-    })
-  })
-*/
 
 
   router.delete("/deleteUser/:id", async (req, res) => {
@@ -226,15 +143,22 @@ router.post('/signup', async (req, res) => {
 });
 
 
+ 
+
 //----ROUTE CONNEXION UTILISATEUR-----------//
 router.post('/login', async (req, res) => {
   try {
-    // Recherche de l'utilisateur par son nom d'utilisateur
-    const user = await User.findOne({ name: req.body.name });
+    // Recherche de l'utilisateur par son nom email
+    const user = await User.findOne({ email: req.body.email });
 
-    // Si l'utilisateur n'existe pas ou le mot de passe ne correspond pas
-    if (!user || !(await bcrypt.compare(req.body.password, user.password))) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+    // Si l'utilisateur n'existe pas
+    if (!user) {
+      return res.status(401).json({ message: 'No user found with this email' });
+    }
+
+    // Si le mot de passe n'est pas correct
+    if (!(await bcrypt.compare(req.body.password, user.password))) {
+      return res.status(401).json({ message: 'Password incorrect' });
     }
 
     // Génération d'un JWT si l'authentification est réussie
@@ -247,6 +171,8 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Error during login', error });
   }
 });
+
+
 
 //-------ROUTE LOGOUT-----//
 router.post('/logout', (req, res) => {
