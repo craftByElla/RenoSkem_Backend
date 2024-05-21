@@ -1,13 +1,13 @@
 const mongoose = require('mongoose');
 
 const userSchema = mongoose.Schema({
-	userName: String,
-	emailUser: String,
-	password: String,                                                    // model de l'utilisateur
-	avatar: String,
-    expertiseLevel:Object // [{ niveau dans chaque corps de métier}]  ss document expertiselevel
 	
-	
+	name: String,
+	email: {type: String, unique: true},
+	password: String,                                                    // modèle de l'utilisateur
+	avatar: { type: String, default: null},
+    skills: {type: mongoose.Schema.Types.ObjectId, ref:'skills', default: null}, // [{ niveau dans chaque corps de métier}]  ss document expertiselevel
+	token: String
 });
 
 const User = mongoose.model('users', userSchema);
