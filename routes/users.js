@@ -8,6 +8,7 @@ const secret_key_JWT = process.env.JWT_SECRET_KEY;
 
 require('../models/connection');
 const User = require('../models/user');
+const Skills = require('../models/skills')
 
 //const { checkBody } = require('../modules/checkBody');
 
