@@ -5,7 +5,7 @@ const userSchema = mongoose.Schema({
 	name: String,
 	email: {type: String, unique: true},
 	password: String,                                                    // modèle de l'utilisateur
-	avatar: { String, default: null},
+	avatar: { type: String, default: null},
     skills: {type: mongoose.Schema.Types.ObjectId, ref:'skills', default: null}, // [{ niveau dans chaque corps de métier}]  ss document expertiselevel
 	token: String
 });
