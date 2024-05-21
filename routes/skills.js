@@ -44,34 +44,36 @@ router.post('/setSkills', (req, res) => {
     router.post('/setSkills', async (req, res) => {
         try {   
     
+          console.log('Requête reçue avec les données:', req.body);
           const newSkills = new Skills({
         
-            'Chauffage': req.body.chauffage,
-            'Cloisonnement/Plâtrage': req.body.cloisonnementPlatrage,
-            'Démolition': req.body.demolition,
-            'Électricité': req.body.electricite,
-            'Étanchéité': req.body.etancheite,
-            'Façade': req.body.facade,
-            'Fondations': req.body.fondations,
-            'Installation cuisine/SDB': req.body.installationCuisineSDB,
-            'Isolation': req.body.isolation,
-            'Maçonnerie': req.body.maconnerie,
-            'Menuiserie': req.body.menuiserie,
-            'Montage de meuble': req.body.montageDeMeuble,
-            'Peinture': req.body.peinture,
-            'Plomberie': req.body.plomberie,
-            'Revêtements muraux': req.body.revetementsMuraux,
-            'Revêtements sol': req.body.revetementsSol,
-            'Revêtements extérieurs': req.body.revetementsExterieurs,
-            'Toiture': req.body.toiture,
-            'Ventilation': req.body.ventilation
-        
+            'Chauffage': req.body['Chauffage'],
+            'Cloisonnement/Plâtrage': req.body['Cloisonnement/Plâtrage'],
+            'Démolition': req.body['Démolition'],
+            'Électricité': req.body['Électricité'],
+            'Étanchéité': req.body['Étanchéité'],
+            'Façade': req.body['Façade'],
+            'Fondations': req.body['Fondations'],
+            'Installation cuisine/SDB': req.body['Installation cuisine/SDB'],
+            'Isolation': req.body['Isolation'],
+            'Maçonnerie': req.body['Maçonnerie'],
+            'Menuiserie': req.body['Menuiserie'],
+            'Montage de meuble': req.body['Montage de meuble'],
+            'Peinture': req.body['Peinture'],
+            'Plomberie': req.body['Plomberie'],
+            'Revêtements muraux': req.body['Revêtements muraux'],
+            'Revêtements sol': req.body['Revêtements sol'],
+            'Revêtements extérieurs': req.body['Revêtements extérieurs'],
+            'Toiture': req.body['Toiture'],
+            'Ventilation': req.body['Ventilation']
       });
 
+          console.log('Nouveau set de compétences créé:', newSkills);
           await newSkills.save();
-
+          console.log('Nouveau set de compétences sauvegardé avec succès:', newSkills);
           res.status(201).json({ message: 'Skills saved successfully', skills: newSkills });
         } catch (error) {
+          console.error('Erreur lors de la sauvegarde des compétences:', error);
           res.status(500).json({ message: 'Error saving skillset', error });
         }
       });

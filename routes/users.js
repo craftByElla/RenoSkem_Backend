@@ -253,5 +253,26 @@ router.post('/logout', (req, res) => {
   res.status(200).json({ message: 'Logged out successfully' });
 });
 
+
+//----------ROUTE ADDSKILLS-----// Permet de lier un ensemble de compétence à un utilisateur
+ 
+
+router.put("/addSkills/:userId/:skillsId/", async (req, res) => {
+  try {
+    const user = await User.findOne({ _id: req.params.userId });
+    const skills = await Skills.findOne({ _id: req.params.skillsId });
+
+    if (!(user && skills)) {
+      return res.status(401).json({ message: 'User or skills not found' });
+    }
+
+    await User.updateOne({_id: req.params.userId}, {skills: req.params.skillsId});
+
+    res.status(200).json({ message: 'Skills added successfully', user: user });
+  } catch (error) {
+    res.status(500).json({ message: 'Error during skills addition', error });
+  }
+});
+
 module.exports = router;
 
