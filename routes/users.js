@@ -168,41 +168,34 @@ router.post('/signup', async (req, res) => {
 //----ROUTE CONNEXION UTILISATEUR-----------//
 router.post('/login', async (req, res) => {
   try {
-    console.log('Received login request with body:', req.body);
-
-    // Recherche de l'utilisateur par son email
+    // Recherche de l'utilisateur par son nom email
     const user = await User.findOne({ email: req.body.email });
 
     // Si l'utilisateur n'existe pas
     if (!user) {
-      console.log('No user found with this email');
       return res.status(401).json({ message: 'No user found with this email' });
     }
 
     // Si le mot de passe n'est pas correct
-    const passwordMatch = await bcrypt.compare(req.body.password, user.password);
-    if (!passwordMatch) {
-      console.log('Password incorrect');
+    if (!(await bcrypt.compare(req.body.password, user.password))) {
       return res.status(401).json({ message: 'Password incorrect' });
     }
 
-    // Génération d'un token unique si l'authentification est réussie
-    const token = uid2(32);
-    console.log('Generated token:', token);
+  // Génération d'un token unique si l'authentification est réussie
+  const token = uid2(32);
+  console.log('Generated token:', token);
 
-    // Mise à jour du token dans le backend
-    user.token = token;
-    await user.save();
+  // Mise à jour du token dans le backend
+  user.token = token;
+  await user.save();
     
-    // Réponse avec le token unique
+    // Réponse avec le token JWT
     res.json({ message: 'Login successful', token: token, name: user.name });
   } catch (error) {
     // Gestion des erreurs
-    console.error('Error during login:', error);
     res.status(500).json({ message: 'Error during login', error });
   }
 });
-
 
 
 
