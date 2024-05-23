@@ -7,36 +7,43 @@ const Room = require('../models/room');
 const User = require('../models/user');
 
 
-
+//-------Route pour créer un nouveau projet-----------//
 router.post('/newProject', async (req, res) => {
   try {
+    // console.log('Requête reçue avec les données :', req.body);
 
-    const user = await User.findOne({token: req.body.token});
+    const user = await User.findOne({ token: req.body.token });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
     const userId = user._id;
 
-    const newProject = new Project({
-      
-        user: userId,
-        name: req.body.name,
-        budget: req.body.budget,
-        //picture: req.body.picture,
-        //rooms: req.body.rooms,
-        location: req.body.location,
-        //archived: req.body.archived,
-        //pinned: req.body.pinned,
-        //creationDate: req.body.creationDate
+    // console.log('Image reçue :', req.body.picture);
 
+    const newProject = new Project({
+      user: userId,
+      name: req.body.name,
+      budget: req.body.budget,
+      picture: req.body.picture,
+      location: req.body.location,
     });
+
+    // console.log('Nouveau projet avant sauvegarde :', newProject);
 
     await newProject.save();
 
+    // console.log('Nouveau projet après sauvegarde :', newProject);
+
     res.status(201).json({ message: 'Project successfully created', project: newProject });
   } catch (error) {
-    res.status(500).json({ message: 'Error saving project', error });
+    res.status(500).json({ message: 'Error saving project', error: error.message });
   }
 });
 
+
+//------------------//
 
     router.get("/getProject/:id", async (req, res) => {
       try {
