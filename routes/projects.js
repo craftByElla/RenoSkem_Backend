@@ -3,14 +3,16 @@ const router = express.Router();
 
 require('../models/connection');
 const Project = require('../models/project');
+const authMiddleware = require('../modules/authMiddleware')
 
 
 
-router.post('/newProject', async (req, res) => {
+router.post('/newProject/:token', authMiddleware, async (req, res) => {
+  console.log('userId', req.userId)
   try {
     const newProject = new Project({
       
-        user: req.body.user,
+        user: req.userId,
         name: req.body.name,
         budget: req.body.budget,
         picture: req.body.picture,
@@ -30,9 +32,9 @@ router.post('/newProject', async (req, res) => {
 });
 
 
-    router.get("/getProject/:id", async (req, res) => {
+    router.get("/getProject/:token", authMiddleware, async (req, res) => {
       try {
-        const project = await Project.findOne({ _id: req.params.id });
+        const project = await Project.findOne({ _id: req.userId });
     
         if (!project) {
           return res.status(401).json({ message: 'Project not found' });
