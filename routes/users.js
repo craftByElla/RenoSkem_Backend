@@ -144,36 +144,45 @@ router.post('/signup', async (req, res) => {
 
  
 
+
 //----ROUTE CONNEXION UTILISATEUR-----------//
 router.post('/login', async (req, res) => {
   try {
-    // Recherche de l'utilisateur par son nom email
+    console.log('Received login request with body:', req.body);
+
+    // Recherche de l'utilisateur par son email
     const user = await User.findOne({ email: req.body.email });
 
     // Si l'utilisateur n'existe pas
     if (!user) {
+      console.log('No user found with this email');
       return res.status(401).json({ message: 'No user found with this email' });
     }
 
     // Si le mot de passe n'est pas correct
-    if (!(await bcrypt.compare(req.body.password, user.password))) {
+    const passwordMatch = await bcrypt.compare(req.body.password, user.password);
+    if (!passwordMatch) {
+      console.log('Password incorrect');
       return res.status(401).json({ message: 'Password incorrect' });
     }
 
-    // Génération d'un JWT si l'authentification est réussie
-    const token = jwt.sign({ id: user._id }, secret_key_JWT);
+    // Génération d'un token unique si l'authentification est réussie
+    const token = uid2(32);
+    console.log('Generated token:', token);
 
     // Mise à jour du token dans le backend
     user.token = token;
     await user.save();
     
-    // Réponse avec le token JWT
+    // Réponse avec le token unique
     res.json({ message: 'Login successful', token: token, name: user.name });
   } catch (error) {
     // Gestion des erreurs
+    console.error('Error during login:', error);
     res.status(500).json({ message: 'Error during login', error });
   }
 });
+
 
 
 
