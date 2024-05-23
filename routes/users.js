@@ -11,17 +11,16 @@ const User = require('../models/user');
 const Skills = require('../models/skills')
 
 //--------GET USER---------// récupère les infos d'un utilisateur
-router.get("/getUser/:id", async (req, res) => {
+router.get("/getUserByToken/:token", async (req, res) => {
   try {
-    const user = await User.findOne({ _id: req.params.id }).populate('skills');
-    
+    const user = await User.findOne({ token: req.params.token }).populate('skills');
+
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
     }
-    
+
     res.status(200).json({ message: 'User found', user: user });
-  } 
-  catch (error) {
+  } catch (error) {
     res.status(500).json({ message: 'Error during search', error });
   }
 });
@@ -164,6 +163,10 @@ router.post('/login', async (req, res) => {
     // Génération d'un JWT si l'authentification est réussie
     const token = jwt.sign({ id: user._id }, secret_key_JWT);
 
+    // Mise à jour du token dans le backend
+    user.token = token;
+    await user.save();
+    
     // Réponse avec le token JWT
     res.json({ message: 'Login successful', token: token, name: user.name });
   } catch (error) {
