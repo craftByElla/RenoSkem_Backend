@@ -8,30 +8,44 @@ const secret_key_JWT = process.env.JWT_SECRET_KEY;
 
 require('../models/connection');
 const User = require('../models/user');
-const Skills = require('../models/skills')
+const Skills = require('../models/skills');
 
-//--------GET USER---------// récupère les infos d'un utilisateur
-router.get("/getUser/:id", async (req, res) => {
-  try {
-    const user = await User.findOne({ _id: req.params.id }).populate('skills');
+
+    router.get("/getUser/:token", async (req, res) => {
+      try {
+        const user = await User.findOne({ token: req.params.token }).populate('skills');
     
-    if (!user) {
-      return res.status(401).json({ message: 'User not found' });
-    }
+        if (!user) {
+          return res.status(401).json({ message: 'User not found' });
+        }
     
-    res.status(200).json({ message: 'User found', user: user });
-  } 
-  catch (error) {
-    res.status(500).json({ message: 'Error during search', error });
-  }
-});
+        res.status(200).json({ message: 'User found', user: user });
+      } catch (error) {
+        res.status(500).json({ message: 'Error during search', error });
+      }
+    });
+
+
+    router.get("/getUserByToken/:token", async (req, res) => {
+      try {
+        const user = await User.findOne({ token: req.params.token }).populate('skills');
+    
+        if (!user) {
+          return res.status(401).json({ message: 'User not found' });
+        }
+    
+        res.status(200).json({ message: 'User found', user: user });
+      } catch (error) {
+        res.status(500).json({ message: 'Error during search', error });
+      }
+    });
 
 
 
-    router.put("/editUSer/:id/:name/:avatar/", async (req, res) => {
+    router.put("/editUSer/:token/:name/:avatar/", async (req, res) => {
       try {
         //const user = await User.findOne({ _id: req.params.id });
-        const user = await User.findByIdAndUpdate({ _id: req.params.id }, { name: req.params.name, avatar: req.params.avatar }, {new: true});
+        const user = await User.findByIdAndUpdate({ token: req.params.token }, { name: req.params.name, avatar: req.params.avatar }, {new: true});
     
         if (!user) {
           return res.status(401).json({ message: 'User not found' });
@@ -47,9 +61,9 @@ router.get("/getUser/:id", async (req, res) => {
 
 
 
-    router.put("/changePassword/:id/:password/", async (req, res) => {
+    router.put("/changePassword/:token/:password/", async (req, res) => {
       try {
-        const user = await User.findByIdAndUpdate({ _id: req.params.id }, {password: bcrypt.hash(req.params.password, 10)}, {new: true});
+        const user = await User.findByIdAndUpdate({ token: req.params.token }, {password: bcrypt.hash(req.params.password, 10)}, {new: true});
     
         if (!user) {
           return res.status(401).json({ message: 'User not found' });
@@ -65,9 +79,9 @@ router.get("/getUser/:id", async (req, res) => {
 
 
 
-    router.put("/changeEmail/:id/:email/", async (req, res) => {
+    router.put("/changeEmail/:token/:email/", async (req, res) => {
       try {
-        const user = await User.findByIdAndUpdate({ _id: req.params.id }, {email: req.params.email}, {new: true});
+        const user = await User.findByIdAndUpdate({ token: req.params.token }, {email: req.params.email}, {new: true});
 
         if (!user) {
           return res.status(401).json({ message: 'User not found' });
@@ -75,17 +89,35 @@ router.get("/getUser/:id", async (req, res) => {
 
        // await User.updateOne({_id: req.params.id}, {email: req.params.email});
     
-        res.status(200).json({ message: 'Email changed successfully', user: user });
+        res.status(200).json({ message: 'Skills added to user successfully', user: user });
       } catch (error) {
-        res.status(500).json({ message: 'Error during email change', error });
+        res.status(500).json({ message: 'Error during addition', error });
       }
     });
 
 
 
-  router.delete("/deleteUser/:id", async (req, res) => {
+
+router.put("/addSkillsToUser/:token/:skillsId/", async (req, res) => {
+  try {
+    const user = await User.findOne({ token: req.params.token });
+    const skills = await Skills.findOne({ _id: req.params.skillsId });
+
+    if (!(user && skills)) {
+      return res.status(401).json({ message: 'User or skills not found' });
+    }
+
+    await User.updateOne({token: req.params.token}, {skills: req.params.skillsId}, {new: true});
+
+    res.status(200).json({ message: 'Skills added successfully', user: user });
+  } catch (error) {
+    res.status(500).json({ message: 'Error during addition', error });
+  }
+});
+
+  router.delete("/deleteUser/:token", async (req, res) => {
     try {
-      const user = await User.findByIdAndDelete({ _id: req.params.id });
+      const user = await User.findByIdAndDelete({ token: req.params.token });
   
       if (!user) {
         return res.status(401).json({ message: 'User not found' });
@@ -105,24 +137,16 @@ router.get("/getUser/:id", async (req, res) => {
 //----ROUTE INSCRIPTION UTILISATEUR-----------//
 router.post('/signup', async (req, res) => {
   try {
-    console.log('Requête reçue avec les données:', req.body);
-
-    // Vérifiez que tous les champs requis sont présents
-    const { name, email, password, avatar, skills } = req.body;
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Tous les champs sont obligatoires' });
-    }
-
     // Hachage du mot de passe reçu
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
     // Création du nouvel utilisateur avec un token unique
     const newUser = new User({
-      name,
-      email,
+      name: req.body.name,
+      email: req.body.email,
       password: hashedPassword,
-      avatar,
-      skills, // Assurez-vous que c'est correctement configuré dans votre modèle
+      avatar: req.body.avatar,
+      skills: req.body.skills, //pas sur que c'est comme ça qu'on appelle la clé étrangère ?
       token: uid2(32), // Génère un token unique de 32 caractères
     });
 
@@ -132,18 +156,10 @@ router.post('/signup', async (req, res) => {
     // Réponse avec le résultat
     res.status(201).json({ message: 'User successfully registered', user: newUser });
   } catch (error) {
-    if (error.code === 11000 && error.keyPattern.email) {
-      console.error('Duplicate email error:', error);
-      return res.status(400).json({ message: 'Cet email est déjà utilisé' });
-    }
-    console.error('Erreur lors de l\'inscription de l\'utilisateur:', error);
     // Gestion des erreurs
     res.status(500).json({ message: 'Error registering user', error });
   }
 });
-
-
- 
 
 //----ROUTE CONNEXION UTILISATEUR-----------//
 router.post('/login', async (req, res) => {
@@ -164,10 +180,6 @@ router.post('/login', async (req, res) => {
     // Génération d'un JWT si l'authentification est réussie
     const token = jwt.sign({ id: user._id }, secret_key_JWT);
 
-     // Mise à jour du token dans le backend
-     user.token = token;
-     await user.save();
-    
     // Réponse avec le token JWT
     res.json({ message: 'Login successful', token: token, name: user.name });
   } catch (error) {
@@ -176,33 +188,11 @@ router.post('/login', async (req, res) => {
   }
 });
 
-
-
 //-------ROUTE LOGOUT-----//
 router.post('/logout', (req, res) => {
   // Supposer que le client supprime le token en appuyant sur logout on supprimerait le token du localstorage
   res.status(200).json({ message: 'Logged out successfully' });
 });
 
-
-//----------ROUTE ADDSKILLS-----// Permet de lier un ensemble de compétence à un utilisateur
- 
-
-router.put("/addSkills/:userId/:skillsId/", async (req, res) => {
-  try {
-    const user = await User.findOne({ _id: req.params.userId });
-    const skills = await Skills.findOne({ _id: req.params.skillsId });
-
-    if (!(user && skills)) {
-      return res.status(401).json({ message: 'User or skills not found' });
-    }
-
-    await User.updateOne({_id: req.params.userId}, {skills: req.params.skillsId});
-
-    res.status(200).json({ message: 'Skills added successfully', user: user });
-  } catch (error) {
-    res.status(500).json({ message: 'Error during skills addition', error });
-  }
-});
-
 module.exports = router;
+
