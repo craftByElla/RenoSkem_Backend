@@ -164,6 +164,10 @@ router.post('/login', async (req, res) => {
     // Génération d'un JWT si l'authentification est réussie
     const token = jwt.sign({ id: user._id }, secret_key_JWT);
 
+     // Mise à jour du token dans le backend
+     user.token = token;
+     await user.save();
+    
     // Réponse avec le token JWT
     res.json({ message: 'Login successful', token: token, name: user.name });
   } catch (error) {
