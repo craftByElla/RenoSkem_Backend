@@ -5,25 +5,35 @@ require('../models/connection');
 const Artisan = require('../models/artisan');
 
 
-
 router.post('/newArtisan', async (req, res) => {
   try {
     const newArtisan = new Artisan({
-      
-        email: req.body.email,
-        phone: req.body.phone,
-        field: req.body.field,
-        company: req.body.company,
-        //availability: req.body.availability, 
-        //trustLevel: req.body.trustLevel,											
-	    //quote: req.body.quote,									
-	    //comment: req.body.comment
+      email: req.body.email,
+      phone: req.body.phone,
+      field: req.body.field,
+      company: req.body.company,
+      //availability: req.body.availability, 
+      //trustLevel: req.body.trustLevel,											
+      //quote: req.body.quote,									
+      //comment: req.body.comment
     });
 
+    // Log des données reçues de la requête
+    console.log('Received data:', req.body);
+
+    // Enregistrement du nouvel artisan dans la base de données
     await newArtisan.save();
 
+    // Log de la création réussie de l'artisan
+    console.log('Artisan successfully created:', newArtisan);
+
+    // Envoi de la réponse au client
     res.status(201).json({ message: 'Artisan successfully created', artisan: newArtisan });
   } catch (error) {
+    // En cas d'erreur, log de l'erreur
+    console.error('Error saving artisan:', error);
+
+    // Envoi d'une réponse d'erreur au client
     res.status(500).json({ message: 'Error saving artisan', error });
   }
 });
@@ -181,6 +191,29 @@ router.post('/newArtisan', async (req, res) => {
     }
   });
   
+
+  router.put("/editArtisan/:id", async (req, res) => {
+    try {
+      const artisan = await Artisan.findByIdAndUpdate({ _id: req.params.id }, {
+          email: req.body.email,
+          phone: req.body.phone,
+          field: req.body.field,
+          company: req.body.company,
+          //availability: req.params.availability, 
+          //trustLevel: req.params.trustLevel,                                            
+          //quote: req.params.quote,                                    
+          //comment: req.params.comment
+          }, {new: true});
+  
+      if (!artisan) {
+        return res.status(401).json({ message: 'Artisan not found' });
+      }
+  
+      res.status(200).json({ message: 'Artisan profile updated successfully', artisan: artisan });
+    } catch (error) {
+      res.status(500).json({ message: 'Error during update', error });
+    }
+  });
 
 
 module.exports = router;
