@@ -212,7 +212,7 @@ router.post('/login', async (req, res) => {
 
 
 //-------ROUTE LOGOUT-----//
-router.post('/logout', (req, res) => {
+router.get('/logout', (req, res) => {
   // Supposer que le client supprime le token en appuyant sur logout on supprimerait le token du localstorage
   res.status(200).json({ message: 'Logged out successfully' });
 });
