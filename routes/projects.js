@@ -28,6 +28,7 @@ router.post('/newProject', async (req, res) => {
       budget: req.body.budget,
       picture: req.body.picture,
       location: req.body.location,
+      comment: req.body.comment,
     });
 
     // console.log('Nouveau projet avant sauvegarde :', newProject);

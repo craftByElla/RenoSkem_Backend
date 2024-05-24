@@ -7,7 +7,6 @@ const projectArtisanSchema = mongoose.Schema({
     trustLevel: { type: Number, enum: [1, 2, 3], default: null },                                             
     quote: { type: Number, default: null },   //    devis
     comment: { type: String, default: '' } 
-          
 });
 
 
