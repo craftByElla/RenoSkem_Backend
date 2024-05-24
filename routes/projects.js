@@ -41,9 +41,30 @@ router.post('/newProject', async (req, res) => {
     res.status(500).json({ message: 'Error saving project', error: error.message });
   }
 });
+//--------Route pour modifier un projet------------//
 
+router.put("/editproject/:id", async (req, res) => {
+  try {
+    const project = await Project.findByIdAndUpdate({ _id: req.params.id }, {
+    
+        name: req.body.name,
+        budget: req.body.budget,
+        location: req.body.location,
+        picture: req.params.avatar,
+   
+        }, {new: true});
 
-//------------------//
+    if (!project) {
+      return res.status(401).json({ message: 'Project not found' });
+    }
+
+    res.status(200).json({ message: 'Project profile updated successfully', project: project });
+  } catch (error) {
+    res.status(500).json({ message: 'Error during update', error });
+  }
+});
+
+//---------Route pour chercher un projet by id (non utilisé), elle sert si on a une barre de recherche dans ProjectScreen ---------//
 
     router.get("/getProject/:id", async (req, res) => {
       try {
@@ -64,72 +85,32 @@ router.post('/newProject', async (req, res) => {
  
 router.get("/getUserProjects/:token", async (req, res) => {
   try {
-    console.log("Received request with token:", req.params.token);
+    // console.log("Received request with token:", req.params.token);
     
     const user = await User.findOne({ token: req.params.token });
     if (!user) {
-      console.log("User not found for token:", req.params.token);
+      // console.log("User not found for token:", req.params.token);
       return res.status(401).json({ message: 'User not found' });
     }
 
     const userId = user._id;
-    console.log("Found user with ID:", userId);
+    // console.log("Found user with ID:", userId);
 
     const projects = await Project.find({ user: userId });
     if (!projects) {
-      console.log("No projects found for user ID:", userId);
+      // console.log("No projects found for user ID:", userId);
       return res.status(401).json({ message: 'No project found' });
     }
 
-    console.log("Projects found:", projects);
+    // console.log("Projects found:", projects);
     res.status(200).json({ message: 'Projects found', projects: projects });
   } catch (error) {
-    console.error("Error during search:", error);
+    // console.error("Error during search:", error);
     res.status(500).json({ message: 'Error during search', error });
   }
 });
 
 
-/*
-    router.put("/editProject/:id/:user/:name/:budget/:picture/:rooms/:archived/:pinned/:creationDate", async (req, res) => {
-      try {
-        const project = await Project.findByIdAndUpdate({ _id: req.params.id }, {
-            user: req.params.user,
-            name: req.params.name,
-            budget: req.params.budget,
-            picture: req.params.avatar,
-            rooms: req.params.rooms,
-            archived: req.params.archived,
-            pinned: req.params.archived,
-            creationDate: req.params.creationDate
-            }, {new: true});
-    
-        if (!project) {
-          return res.status(401).json({ message: 'Project not found' });
-        }
-    
-        res.status(200).json({ message: 'Project profile updated successfully', project: project });
-      } catch (error) {
-        res.status(500).json({ message: 'Error during update', error });
-      }
-    });
-*/
-
-    router.put("/setProjectPicture/:id/:picture", async (req, res) => {
-        try {
-          const project = await Project.findByIdAndUpdate({ _id: req.params.id }, {
-              picture: req.params.picture
-              }, {new: true});
-      
-          if (!project) {
-            return res.status(401).json({ message: 'Project not found' });
-          }
-      
-          res.status(200).json({ message: 'Project picture set successfully', project: project });
-        } catch (error) {
-          res.status(500).json({ message: 'Error during update', error });
-        }
-      });
 
     //------Route pour épingler un projet------------//
     router.put("/setIsProjectPinned/:id/:pinned", async (req, res) => {
@@ -166,6 +147,8 @@ router.get("/getUserProjects/:token", async (req, res) => {
       });
 
 
+    
+    
 
     router.put("/addRoomToProject/:projectId/:roomId", async (req, res) => {
         try {
@@ -201,7 +184,7 @@ router.get("/getUserProjects/:token", async (req, res) => {
         try {
     
             const project = await Project.findOne({ _id: req.params.projectId });
-            console.log(project);
+            // console.log(project);
     
             if (!project) {
                 return res.status(401).json({ message: 'Project not found' });
@@ -212,8 +195,8 @@ router.get("/getUserProjects/:token", async (req, res) => {
             }
 
             const index = await project.rooms.findIndex((room) => room._id.toString() === req.params.roomId);
-            console.log(project.rooms);
-            console.log(req.params.roomId);
+            // console.log(project.rooms);
+            // console.log(req.params.roomId);
 
             if (index < 0) {
                 return res.status(401).json({ message: 'Room not found' });
@@ -233,17 +216,17 @@ router.get("/getUserProjects/:token", async (req, res) => {
 
   //------Route pour supprimer un projet-----------/
   router.delete("/deleteProject/:id", async (req, res) => {
-    console.log("Requête reçue pour supprimer le projet avec l'ID:", req.params.id);
+    // console.log("Requête reçue pour supprimer le projet avec l'ID:", req.params.id);
     try {
         const project = await Project.findByIdAndDelete(req.params.id);
         if (!project) {
-            console.log("Projet non trouvé");
+            // console.log("Projet non trouvé");
             return res.status(401).json({ message: 'Project not found' });
         }
-        console.log("Projet supprimé avec succès:", project);
+        // console.log("Projet supprimé avec succès:", project);
         res.status(200).json({ message: 'Project deleted successfully', project: project });
     } catch (error) {
-        console.error("Erreur lors de la suppression du projet:", error);
+        // console.error("Erreur lors de la suppression du projet:", error);
         res.status(500).json({ message: 'Error during deletion', error });
     }
 });

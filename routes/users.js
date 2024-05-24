@@ -186,7 +186,7 @@ router.post('/login', async (req, res) => {
 
   // Génération d'un token unique si l'authentification est réussie
   const token = uid2(32);
-  console.log('Generated token:', token);
+  // console.log('Generated token:', token);
 
   // Mise à jour du token dans le backend
   user.token = token;
