@@ -115,6 +115,9 @@ router.put("/addSkillsToUser/:token/:skillsId/", async (req, res) => {
   }
 });
 
+
+//---------SUPPRIME UN UTILISATEUR----------------//
+
   router.delete("/deleteUser/:token", async (req, res) => {
     try {
       const user = await User.findByIdAndDelete({ token: req.params.token });
