@@ -60,6 +60,36 @@ router.post('/newProject', async (req, res) => {
     });
 
 
+//--------Route pour récupérer tout les projets d'un utilisateur------------//
+ 
+router.get("/getUserProjects/:token", async (req, res) => {
+  try {
+    console.log("Received request with token:", req.params.token);
+    
+    const user = await User.findOne({ token: req.params.token });
+    if (!user) {
+      console.log("User not found for token:", req.params.token);
+      return res.status(401).json({ message: 'User not found' });
+    }
+
+    const userId = user._id;
+    console.log("Found user with ID:", userId);
+
+    const projects = await Project.find({ user: userId });
+    if (!projects) {
+      console.log("No projects found for user ID:", userId);
+      return res.status(401).json({ message: 'No project found' });
+    }
+
+    console.log("Projects found:", projects);
+    res.status(200).json({ message: 'Projects found', projects: projects });
+  } catch (error) {
+    console.error("Error during search:", error);
+    res.status(500).json({ message: 'Error during search', error });
+  }
+});
+
+
 /*
     router.put("/editProject/:id/:user/:name/:budget/:picture/:rooms/:archived/:pinned/:creationDate", async (req, res) => {
       try {
@@ -101,7 +131,7 @@ router.post('/newProject', async (req, res) => {
         }
       });
 
-
+    //------Route pour épingler un projet------------//
     router.put("/setIsProjectPinned/:id/:pinned", async (req, res) => {
         try {
           const project = await Project.findByIdAndUpdate({ _id: req.params.id }, {
@@ -118,7 +148,7 @@ router.post('/newProject', async (req, res) => {
         }
       });
 
-
+    //------Route pour archiver un projet------------//
     router.put("/setIsProjectArchived/:id/:archived", async (req, res) => {
         try {
           const project = await Project.findByIdAndUpdate({ _id: req.params.id }, {
@@ -201,21 +231,23 @@ router.post('/newProject', async (req, res) => {
     });
 
 
-
+  //------Route pour supprimer un projet-----------/
   router.delete("/deleteProject/:id", async (req, res) => {
+    console.log("Requête reçue pour supprimer le projet avec l'ID:", req.params.id);
     try {
-      const project = await Project.findByIdAndDelete({ _id: req.params.id });
-  
-      if (!project) {
-        return res.status(401).json({ message: 'Project not found' });
-      }
-  
-      res.status(200).json({ message: 'Project deleted successfully', project: project });
+        const project = await Project.findByIdAndDelete(req.params.id);
+        if (!project) {
+            console.log("Projet non trouvé");
+            return res.status(401).json({ message: 'Project not found' });
+        }
+        console.log("Projet supprimé avec succès:", project);
+        res.status(200).json({ message: 'Project deleted successfully', project: project });
     } catch (error) {
-      res.status(500).json({ message: 'Error during deletion', error });
+        console.error("Erreur lors de la suppression du projet:", error);
+        res.status(500).json({ message: 'Error during deletion', error });
     }
-  });
-  
+});
+
 
 
 
