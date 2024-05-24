@@ -97,7 +97,7 @@ const Skills = require('../models/skills');
 
 
 
-
+//---------LIE LES SKILLS A UN USER----------//
 router.put("/addSkillsToUser/:token/:skillsId/", async (req, res) => {
   try {
     const user = await User.findOne({ token: req.params.token });
