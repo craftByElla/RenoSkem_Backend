@@ -106,7 +106,7 @@ res.status(500).json({ message: 'Error during update', error });
 
 
 
-
+//---------LIE LES SKILLS A UN USER----------//
 router.put("/addSkillsToUser/:token/:skillsId/", async (req, res) => {
   try {
     const user = await User.findOne({ token: req.params.token });
