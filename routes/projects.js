@@ -45,42 +45,53 @@ router.post('/newProject', async (req, res) => {
 //--------Route pour modifier un projet------------//
 
 router.put("/editproject/:id", async (req, res) => {
+  // console.log("PUT /editproject/:id called");
+  // console.log("req.params.id:", req.params.id);
+  // console.log("req.body:", req.body);
+  
   try {
-    const project = await Project.findByIdAndUpdate({ _id: req.params.id }, {
-    
-        name: req.body.name,
-        budget: req.body.budget,
-        location: req.body.location,
-        picture: req.params.avatar,
-   
-        }, {new: true});
+      const project = await Project.findByIdAndUpdate(req.params.id, {
+          name: req.body.name,
+          budget: req.body.budget,
+          location: req.body.location,
+          picture: req.body.picture,
+          comment: req.body.comment,
+      }, { new: true });
+      
+      // console.log("Updated project:", project);
 
-    if (!project) {
-      return res.status(401).json({ message: 'Project not found' });
-    }
+      if (!project) {
+          return res.status(401).json({ message: 'Project not found' });
+      }
 
-    res.status(200).json({ message: 'Project profile updated successfully', project: project });
+      res.status(200).json({ message: 'Project profile updated successfully', project: project });
   } catch (error) {
-    res.status(500).json({ message: 'Error during update', error });
+      // console.error("Error during update:", error);
+      res.status(500).json({ message: 'Error during update', error });
   }
 });
 
-//---------Route pour chercher un projet by id (non utilisé), elle sert si on a une barre de recherche dans ProjectScreen ---------//
+//---------Route pour chercher un projet by id ---------//
 
-    router.get("/getProject/:id", async (req, res) => {
-      try {
-        const project = await Project.findOne({ _id: req.userId });
-    
-        if (!project) {
+router.get("/getProject/:id", async (req, res) => {
+  // console.log("GET /getProject/:id called");
+  // console.log("req.params.id:", req.params.id);
+ 
+  
+  try {
+      const project = await Project.findOne({ _id: req.params.id });
+      // console.log("project:", project);
+
+      if (!project) {
           return res.status(401).json({ message: 'Project not found' });
-        }
-    
-        res.status(200).json({ message: 'Project found', project: project });
-      } catch (error) {
-        res.status(500).json({ message: 'Error during search', error });
       }
-    });
 
+      res.status(200).json({ message: 'Project found', project: project });
+  } catch (error) {
+      // console.error("Error during search:", error);
+      res.status(500).json({ message: 'Error during search', error });
+  }
+});
 
 //--------Route pour récupérer tout les projets d'un utilisateur------------//
  
