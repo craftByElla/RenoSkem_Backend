@@ -36,6 +36,7 @@ const corsOptions = {
   methods: ["GET", "POST", "PUT", "DELETE"],
 };
 
+
 app.use(cors(corsOptions)) // Installation de Cors
 app.use(logger('dev'));
 app.use(express.json());
@@ -50,5 +51,6 @@ app.use('/rooms', roomsRouter);
 app.use('/skills', skillsRouter);
 app.use('/artisans', artisansRouter);
 app.use('/teammates', teammatesRouter);
+
 
 module.exports = app;

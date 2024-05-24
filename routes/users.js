@@ -42,22 +42,31 @@ const Skills = require('../models/skills');
 
 
 
-    router.put("/editUSer/:token/:name/:avatar/", async (req, res) => {
-      try {
-        //const user = await User.findOne({ _id: req.params.id });
-        const user = await User.findByIdAndUpdate({ token: req.params.token }, { name: req.params.name, avatar: req.params.avatar }, {new: true});
-    
-        if (!user) {
-          return res.status(401).json({ message: 'User not found' });
-        }
+router.put("/editUser/:token", async (req, res) => {
+  try {
 
-        //await User.updateOne({ _id: req.params.id }, { name: req.params.name, avatar: req.params.avatar });
-    
-        res.status(200).json({ message: 'User profile updated successfully', user: user });
-      } catch (error) {
-        res.status(500).json({ message: 'Error during update', error });
+    const user = await User.findOne({ token: req.params.token });
+    console.log('user', user)
+if (!user) {
+  return res.status(402).json({ message: 'User not found' });
+}
+
+else if(req.body.currentPassword){
+    if (!(await bcrypt.compare(req.body.currentPassword, user.password))) {
+        return res.status(401).json({ message: 'Password incorrect' });
+    } else {
+        const hashedPassword = await bcrypt.hash(req.body.newPassword, 10);
+        await User.updateOne({ token: req.params.token }, { name: req.body.name, password: hashedPassword, avatar: req.body.avatar }, {new: true});
       }
-    });
+} else {
+    await User.updateOne({ token: req.params.token }, { name: req.body.name, avatar: req.body.avatar }, {new: true})
+}
+
+res.status(200).json({ message: 'User profile updated successfully', user: user });
+} catch (error) {
+res.status(500).json({ message: 'Error during update', error });
+}
+});
 
 
 
@@ -203,7 +212,7 @@ router.post('/login', async (req, res) => {
 
 
 //-------ROUTE LOGOUT-----//
-router.post('/logout', (req, res) => {
+router.get('/logout', (req, res) => {
   // Supposer que le client supprime le token en appuyant sur logout on supprimerait le token du localstorage
   res.status(200).json({ message: 'Logged out successfully' });
 });

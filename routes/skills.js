@@ -4,6 +4,8 @@ const router = express.Router();
 require('../models/connection');
 const Skills = require('../models/skills');
 
+const get_idSkillsWithTokenUSerMiddleware  = require('../modules/get_idSkillsWithTokenUSerMiddleware')
+
 //const { checkBody } = require('../modules/checkBody');
 
 /*
@@ -108,29 +110,31 @@ router.post('/setSkills', (req, res) => {
       })
       */
     
-      router.put("/editSkills/:id/:chauffage/:cloisonnementPlatrage/:demolition/:electricite/:etancheite/:facade/:fondations/:installationCuisineSDB/:isolation/:maconnerie/:menuiserie/:montageDeMeuble/:peinture/:plomberie/:revetementsMuraux/:revetementsSol/:revetementsExterieurs/:toiture/:ventilation", async (req, res) => {
+      router.put("/editSkills/:token/", (get_idSkillsWithTokenUSerMiddleware), async (req, res) => {
         try {
-          const skills = await Skills.findByIdAndUpdate({ _id: req.params.id }, {
+          console.log(req.body)
+          console.log('req.skillsId', req.skillsId)
+          const skills = await Skills.findByIdAndUpdate({ _id: req.skillsId }, {
                     
-            'Chauffage': req.params.chauffage,
-            'Cloisonnement/Plâtrage': req.params.cloisonnementPlatrage,
-            'Démolition': req.params.demolition,
-            'Électricité': req.params.electricite,
-            'Étanchéité': req.params.etancheite,
-            'Façade': req.params.facade,
-            'Fondations': req.params.fondations,
-            'Installation cuisine/SDB': req.params.installationCuisineSDB,  // problème avec le slash de 'Installation cuisine/SDB'  lorsque l'on fait une requête
-            'Isolation': req.params.isolation,
-            'Maçonnerie': req.params.maconnerie,
-            'Menuiserie': req.params.menuiserie,
-            'Montage de meuble': req.params.montageDeMeuble,
-            'Peinture': req.params.peinture,
-            'Plomberie': req.params.plomberie,
-            'Revêtements muraux': req.params.revetementsMuraux,
-            'Revêtements sol': req.params.revetementsSol,
-            'Revêtements extérieurs': req.params.revetementsExterieurs,
-            'Toiture': req.params.toiture,
-            'Ventilation': req.params.ventilation
+            'Chauffage': req.body.chauffage,
+            'Cloisonnement/Plâtrage': req.body.cloisonnementPlatrage,
+            'Démolition': req.body.demolition,
+            'Électricité': req.body.electricite,
+            'Étanchéité': req.body.etancheite,
+            'Façade': req.body.facade,
+            'Fondations': req.body.fondations,
+            'Installation cuisine/SDB': req.body.installationCuisineSDB,  // problème avec le slash de 'Installation cuisine/SDB'  lorsque l'on fait une requête
+            'Isolation': req.body.isolation,
+            'Maçonnerie': req.body.maconnerie,
+            'Menuiserie': req.body.menuiserie,
+            'Montage de meuble': req.body.montageDeMeuble,
+            'Peinture': req.body.peinture,
+            'Plomberie': req.body.plomberie,
+            'Revêtements muraux': req.body.revetementsMuraux,
+            'Revêtements sol': req.body.revetementsSol,
+            'Revêtements extérieurs': req.body.revetementsExterieurs,
+            'Toiture': req.body.toiture,
+            'Ventilation': req.body.ventilation
         }, {new: true});
       
           if (!skills) {

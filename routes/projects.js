@@ -68,7 +68,7 @@ router.put("/editproject/:id", async (req, res) => {
 
     router.get("/getProject/:id", async (req, res) => {
       try {
-        const project = await Project.findOne({ _id: req.params.id });
+        const project = await Project.findOne({ _id: req.userId });
     
         if (!project) {
           return res.status(401).json({ message: 'Project not found' });
