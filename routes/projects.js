@@ -7,40 +7,47 @@ const Room = require('../models/room');
 const User = require('../models/user');
 
 
-
+//-------Route pour créer un nouveau projet-----------//
 router.post('/newProject', async (req, res) => {
   try {
+    // console.log('Requête reçue avec les données :', req.body);
 
-    const user = await User.findOne({token: req.body.token});
+    const user = await User.findOne({ token: req.body.token });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
     const userId = user._id;
 
-    const newProject = new Project({
-      
-        user: userId,
-        name: req.body.name,
-        budget: req.body.budget,
-        //picture: req.body.picture,
-        //rooms: req.body.rooms,
-        location: req.body.location,
-        //archived: req.body.archived,
-        //pinned: req.body.pinned,
-        //creationDate: req.body.creationDate
+    // console.log('Image reçue :', req.body.picture);
 
+    const newProject = new Project({
+      user: userId,
+      name: req.body.name,
+      budget: req.body.budget,
+      picture: req.body.picture,
+      location: req.body.location,
     });
+
+    // console.log('Nouveau projet avant sauvegarde :', newProject);
 
     await newProject.save();
 
+    // console.log('Nouveau projet après sauvegarde :', newProject);
+
     res.status(201).json({ message: 'Project successfully created', project: newProject });
   } catch (error) {
-    res.status(500).json({ message: 'Error saving project', error });
+    res.status(500).json({ message: 'Error saving project', error: error.message });
   }
 });
 
 
+//------------------//
+
     router.get("/getProject/:id", async (req, res) => {
       try {
-        const project = await Project.findOne({ _id: req.params.id });
+        const project = await Project.findOne({ _id: req.userId });
     
         if (!project) {
           return res.status(401).json({ message: 'Project not found' });
@@ -51,6 +58,36 @@ router.post('/newProject', async (req, res) => {
         res.status(500).json({ message: 'Error during search', error });
       }
     });
+
+
+//--------Route pour récupérer tout les projets d'un utilisateur------------//
+ 
+router.get("/getUserProjects/:token", async (req, res) => {
+  try {
+    console.log("Received request with token:", req.params.token);
+    
+    const user = await User.findOne({ token: req.params.token });
+    if (!user) {
+      console.log("User not found for token:", req.params.token);
+      return res.status(401).json({ message: 'User not found' });
+    }
+
+    const userId = user._id;
+    console.log("Found user with ID:", userId);
+
+    const projects = await Project.find({ user: userId });
+    if (!projects) {
+      console.log("No projects found for user ID:", userId);
+      return res.status(401).json({ message: 'No project found' });
+    }
+
+    console.log("Projects found:", projects);
+    res.status(200).json({ message: 'Projects found', projects: projects });
+  } catch (error) {
+    console.error("Error during search:", error);
+    res.status(500).json({ message: 'Error during search', error });
+  }
+});
 
 
 /*
@@ -94,7 +131,7 @@ router.post('/newProject', async (req, res) => {
         }
       });
 
-
+    //------Route pour épingler un projet------------//
     router.put("/setIsProjectPinned/:id/:pinned", async (req, res) => {
         try {
           const project = await Project.findByIdAndUpdate({ _id: req.params.id }, {
@@ -111,7 +148,7 @@ router.post('/newProject', async (req, res) => {
         }
       });
 
-
+    //------Route pour archiver un projet------------//
     router.put("/setIsProjectArchived/:id/:archived", async (req, res) => {
         try {
           const project = await Project.findByIdAndUpdate({ _id: req.params.id }, {
@@ -194,21 +231,23 @@ router.post('/newProject', async (req, res) => {
     });
 
 
-
+  //------Route pour supprimer un projet-----------/
   router.delete("/deleteProject/:id", async (req, res) => {
+    console.log("Requête reçue pour supprimer le projet avec l'ID:", req.params.id);
     try {
-      const project = await Project.findByIdAndDelete({ _id: req.params.id });
-  
-      if (!project) {
-        return res.status(401).json({ message: 'Project not found' });
-      }
-  
-      res.status(200).json({ message: 'Project deleted successfully', project: project });
+        const project = await Project.findByIdAndDelete(req.params.id);
+        if (!project) {
+            console.log("Projet non trouvé");
+            return res.status(401).json({ message: 'Project not found' });
+        }
+        console.log("Projet supprimé avec succès:", project);
+        res.status(200).json({ message: 'Project deleted successfully', project: project });
     } catch (error) {
-      res.status(500).json({ message: 'Error during deletion', error });
+        console.error("Erreur lors de la suppression du projet:", error);
+        res.status(500).json({ message: 'Error during deletion', error });
     }
-  });
-  
+});
+
 
 
 
