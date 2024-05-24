@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 
 const artisanSchema = mongoose.Schema({
 
-	email: String,
-	phone: Number,
+	email: {type: String, default: null},
+	phone: {type: Number, default: null},
 	field: { type: String, enum: [
 		"Chauffage",
 		"Cloisonnement/Plâtrage",
@@ -24,12 +24,12 @@ const artisanSchema = mongoose.Schema({
 		"Revêtements extérieurs",
 		"Toiture",
 		"Ventilation"
-	] },												// domaine d'expertise
-	company: String,
-	availability: { type: Date, default: null },               
-	trustLevel: { type: Number, enum: [1, 2, 3], default: null }, 											
-	quote: { type: Number, default: null }, 											//	devis
-	comment: { type: String, default: null } 
+	], required: true },												// domaine d'expertise
+	company: {type: String, required: true},
+	//availability: { type: Date, default: null },               
+	//trustLevel: { type: Number, enum: [1, 2, 3], default: null }, 											
+	//quote: { type: Number, default: null }, 											//	devis
+	//comment: { type: String, default: null } 
 	
 });
 

@@ -3,6 +3,7 @@ const router = express.Router();
 
 require('../models/connection');
 const Teammate = require('../models/teammate');
+const Skills = require('../models/skills');
 
 
 
@@ -11,9 +12,9 @@ router.post('/newTeammate', async (req, res) => {
     const newTeammate = new Teammate({
       
         name: req.body.name,
-        avatar: req.body.avatar,
-        items: req.body.items,
-        skills: req.body.skills,
+        //avatar: req.body.avatar,
+        //items: req.body.items,
+        //skills: req.body.skills,
 
     });
 
@@ -24,6 +25,25 @@ router.post('/newTeammate', async (req, res) => {
     res.status(500).json({ message: 'Error saving teammate', error });
   }
 });
+
+
+
+router.put("/addSkillsToTeammate/:teammateId/:skillsId/", async (req, res) => {
+    try {
+      const teammate = await Teammate.findOne({ _id: req.params.teammateId });
+      const skills = await Skills.findOne({ _id: req.params.skillsId });
+  
+      if (!(teammate && skills)) {
+        return res.status(401).json({ message: 'User or skills not found' });
+      }
+  
+      await Teammate.updateOne({_id: req.params.teammateId}, {skills: req.params.skillsId}, {new: true});
+  
+      res.status(200).json({ message: 'Skills added successfully', teammate: teammate });
+    } catch (error) {
+      res.status(500).json({ message: 'Error during addition', error });
+    }
+  });
 
 
     router.get("/getTeammate/:id", async (req, res) => {

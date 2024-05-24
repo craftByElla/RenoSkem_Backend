@@ -4,8 +4,8 @@ const teammateSchema = mongoose.Schema({
 	                                      
     name: String,
     avatar: {type: String, default: null},
-    items: {type: [{type: mongoose.Schema.Types.ObjectId, ref:'item'}], default: null},
-    skills: {type: mongoose.Schema.Types.ObjectId, ref:'skills'}
+    items: {type: [{type: String, ref:'items'}], default: []},
+    skills: {type: mongoose.Schema.Types.ObjectId, ref:'skills', default: null}
     
 });
 
