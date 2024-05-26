@@ -5,10 +5,11 @@ require('../models/connection');
 const Room = require('../models/room');
 const Teammate = require('../models/teammate');
 const Artisan = require('../models/artisan');
+const Project = require('../models/project');
 const uid2 = require('uid2');
 
 
-
+//------------Création de room-----------//
 router.post('/newRoom', async (req, res) => {
     try {
         const newRoom = new Room({
@@ -30,7 +31,7 @@ router.post('/newRoom', async (req, res) => {
     }
 });
 
-
+//------------Récupère une room avec son id----------------//
 
 router.get("/getRoom/:id", async (req, res) => {
     try {
@@ -45,6 +46,100 @@ router.get("/getRoom/:id", async (req, res) => {
         res.status(500).json({ message: 'Error during search', error });
     }
 });
+
+//------------Récupère les rooms d'un projet-----------//
+router.get('/getRoomsByProject/:projectId', async (req, res) => {
+    try {
+        const projectId = req.params.projectId;
+        // console.log(`Fetching rooms for project: ${projectId}`);
+        const rooms = await Room.find({ project: projectId });
+
+        if (!rooms) {
+            return res.status(404).json({ message: 'Rooms not found' });
+        }
+
+        res.status(200).json({ rooms });
+    } catch (error) {
+        // console.error('Error fetching rooms:', error);
+        res.status(500).json({ message: 'Error during search', error });
+    }
+});
+
+
+
+//-----------Met à jour les pièces d'un projet--------------//
+router.post('/updateRooms', async (req, res) => {
+    const { projectId, rooms } = req.body;
+    // console.log('Updating rooms for project:', projectId, rooms);
+
+    try {
+        const project = await Project.findById(projectId).populate('rooms');
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' });
+        }
+
+        const existingRooms = project.rooms;
+        // console.log('Existing rooms:', existingRooms.length);
+
+        const roomCounts = Object.entries(rooms);
+
+        let totalRooms = 0;
+        for (const [type, newCount] of roomCounts) {
+            totalRooms += newCount;
+            if (type === 'Grenier/Combles' && newCount > 1) {
+                return res.status(400).json({ message: 'Only one Grenier/Combles is allowed' });
+            }
+        }
+
+        if (totalRooms > 18) {
+            return res.status(400).json({ message: 'A maximum of 18 rooms is allowed' });
+        }
+
+        // Loop over each room type in the counts
+        for (const [type, newCount] of roomCounts) {
+            const currentRoomsOfType = existingRooms.filter(room => room.type === type);
+            const currentCount = currentRoomsOfType.length;
+
+            // console.log(`Type: ${type}, Current count: ${currentCount}, New count: ${newCount}`);
+
+            // If the new count is greater, add rooms
+            if (newCount > currentCount) {
+                for (let i = 0; i < newCount - currentCount; i++) {
+                    const newRoom = new Room({ type, project: projectId });
+                    await newRoom.save();
+                    project.rooms.push(newRoom);
+                }
+            }
+            // If the new count is lesser, remove rooms
+            else if (newCount < currentCount) {
+                for (let i = 0; i < currentCount - newCount; i++) {
+                    const roomToRemove = currentRoomsOfType[i];
+                    // console.log('Removing room:', roomToRemove.type);
+
+                    // Remove the room from the database
+                    await Room.findByIdAndDelete(roomToRemove._id);
+
+                    // Remove the room from the project's room list
+                    project.rooms = project.rooms.filter(room => !room._id.equals(roomToRemove._id));
+                }
+            }
+        }
+
+        // Save the updated project
+        await project.save();
+
+        // Return the updated rooms
+        const updatedRooms = await Room.find({ project: projectId });
+        res.status(200).json({ message: 'Rooms updated successfully', rooms: updatedRooms });
+    } catch (error) {
+        // console.error('Error updating rooms:', error);
+        res.status(500).json({ message: 'Error updating rooms', error });
+    }
+});
+
+
+
+
 
 /*
 router.put("/editRoom/:id/:name/:surface/:comment", async (req, res) => {

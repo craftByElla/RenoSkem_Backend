@@ -48,7 +48,7 @@ const roomSchema = mongoose.Schema({
 		"Grenier/Combles",
 		"Jardin",
 		"Salle à manger",
-		"Salle de bain de meuble",
+		"Salle de bain",
 	], required: true}, 
 	name: { type: String, default: null },
     items: { type: [itemSchema], default: [] },  // [{name:String, level: Number, DIYorPRO: Boolean }, inserer d'autre objets si plusieurs poste de travaux ] 

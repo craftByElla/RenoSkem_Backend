@@ -14,9 +14,9 @@ const projectSchema = mongoose.Schema({     // modèle du projet
                                    
     user: { type: mongoose.Schema.Types.ObjectId, ref:'user', required: true },
     name: { type: String, required: true },
-    budget: { type: Number, required: true },
+    budget: { type: Number, required: false },
     picture: { type: String, default: '' },
-    location: { type: String, required: true },  
+    location: { type: String, required: false },  
     rooms: { type: [{type: mongoose.Schema.Types.ObjectId, ref:'rooms'}], default: []},   
     archived: { type: Boolean, default: false },
     pinned: { type: Boolean, default: false },
