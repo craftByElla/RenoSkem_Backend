@@ -138,7 +138,86 @@ router.post('/updateRooms', async (req, res) => {
     }
 });
 
+//---------------Update détails d'une room (ajoute/supprime/modifie)-----------//
+ 
 
+router.put("/editRoom", async (req, res) => {
+    try {
+        let room = await Room.findOne({ _id: req.body.roomId });
+
+        if (!room) {
+            return res.status(401).json({ message: 'Room not found' });
+        }
+       
+        if(req.body.name){
+                          
+            room.name = req.body.name;
+        }
+
+        if(req.body.surface){
+     
+            room.surface = req.body.surface;
+        }
+     
+        if(req.body.comment){
+                          
+            room.comment = req.body.comment;
+        }
+     
+        if(req.body.itemsToAdd != []){
+
+           for(i = 0; i < req.body.itemsToAdd.length; i++){
+           
+                const newItem = {
+
+                    id: uid2(24),
+                    field: req.body.itemsToAdd[i].field,
+                    difficulty: req.body.itemsToAdd[i].difficulty,
+                    artisan: null,
+                    teammates: []
+                };
+
+                room.items.push(newItem);
+            }
+          
+        }
+      
+        if(req.body.itemsToRemove != []){
+
+            for(i = 0; i < req.body.itemsToRemove.length; i++){
+           
+                const itemIndex = room.items.findIndex((item) => item.id === req.body.itemsToRemove[i]);
+
+                if (itemIndex < 0) {
+                    return res.status(401).json({ message: 'Item to remove not found' });
+                }
+
+                room.items.splice(itemIndex, 1);
+            }
+        }
+ 
+        if(req.body.itemsToModify != []){
+
+            for(i = 0; i < req.body.itemsToModify.length; i++){
+           
+                const itemIndex = room.items.findIndex((item) => item.id === req.body.itemsToModify[i].id);
+             
+                if (itemIndex < 0) {
+                    return res.status(401).json({ message: 'Item to modify not found' });
+                }
+    
+                room.items[itemIndex].field = req.body.itemsToModify[i].field;
+                room.items[itemIndex].difficulty = req.body.itemsToModify[i].difficulty;
+            }
+        }
+
+        await room.save();
+
+        res.status(200).json({ message: 'Room updated successfully', room: room });
+    } catch (error) {
+        res.status(500).json({ message: 'Error during update', error });
+    }
+});
 
 
 
