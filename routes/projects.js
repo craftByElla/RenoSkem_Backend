@@ -251,29 +251,29 @@ router.get("/getUserProjects/:token", async (req, res) => {
 
 
 
-  router.put("/addArtisanToProject/:projectId/:field/:difficulty", async (req, res) => {
-    try {
+router.put("/addArtisanToProject", async (req, res) => {
+  try {
 
-        const item = {
+    const projectArtisan = {
 
-            id: uid2(24),
-            field: req.params.field,
-            difficulty: req.params.difficulty,
-            /*diy: true,
-            artisan: null,        
-            teammates: null,*/
-        };
+      artisanId: req.body.artisanId,
+      availability: req.body.availability,
+      trustLevel: req.body.trustLevel,
+      quote: req.body.quote,
+      comment: req.body.comment
 
-        const room = await Room.findByIdAndUpdate({ _id: req.params.roomId }, { $push: { items: item } }, { new: true, useFindAndModify: false });
-
-        if (!room) {
-            return res.status(401).json({ message: 'Room not found' });
-        }
-
-        res.status(200).json({ message: 'Room updated successfully', room: room });
-    } catch (error) {
-        res.status(500).json({ message: 'Error during update', error });
     }
+
+    const project = await Project.findByIdAndUpdate({ _id: req.body.projectId }, { $push: { artisans: projectArtisan } }, { new: true, useFindAndModify: false });
+
+    if (!project) {
+      return res.status(401).json({ message: 'Project not found' });
+    }
+
+    res.status(200).json({ message: 'Project updated successfully', project: project });
+  } catch (error) {
+    res.status(500).json({ message: 'Error during update', error });
+  }
 });
 
 

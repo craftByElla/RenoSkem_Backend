@@ -217,5 +217,30 @@ router.get('/logout', (req, res) => {
   res.status(200).json({ message: 'Logged out successfully' });
 });
 
+
+
+
+router.get("/getUserArtisansByField", async (req, res) => {
+  try {
+
+    const user = await User.findOne({ token: req.body.token }).populate('artisans');
+
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+
+    if (!user.artisans.length) {
+      return res.status(401).json({ message: 'No artisan found' });
+    }
+
+    const artisans = user.artisans.filter(artisan => artisan.field === req.body.field);
+
+    res.status(200).json({ message: 'Artisan(s) found', artisans: artisans });
+  } catch (error) {
+    res.status(500).json({ message: 'Error during search', error });
+  }
+
+});
+
 module.exports = router;
 
