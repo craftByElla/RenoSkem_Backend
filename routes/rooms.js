@@ -69,71 +69,72 @@ router.get('/getRoomsByProject/:projectId', async (req, res) => {
 
 //-----------Met à jour les pièces d'un projet--------------//
 router.post('/updateRooms', async (req, res) => {
-    const { projectId, rooms } = req.body;
+    const { projectId, rooms } = req.body; // Récupérer l'ID du projet et les nouvelles pièces du corps de la requête
     // console.log('Updating rooms for project:', projectId, rooms);
 
     try {
+        // Trouver le projet par ID et peupler les pièces associées
         const project = await Project.findById(projectId).populate('rooms');
         if (!project) {
-            return res.status(404).json({ message: 'Project not found' });
+            return res.status(404).json({ message: 'Project not found' }); // Retourner une erreur si le projet n'est pas trouvé
         }
 
-        const existingRooms = project.rooms;
+        const existingRooms = project.rooms; // Obtenir les pièces existantes du projet
         // console.log('Existing rooms:', existingRooms.length);
 
-        const roomCounts = Object.entries(rooms);
+        const roomCounts = Object.entries(rooms); // Convertir les pièces en un tableau d'entrées [type, count]
 
         let totalRooms = 0;
         for (const [type, newCount] of roomCounts) {
-            totalRooms += newCount;
+            totalRooms += newCount; // Calculer le nombre total de pièces
             if (type === 'Grenier/Combles' && newCount > 1) {
-                return res.status(400).json({ message: 'Only one Grenier/Combles is allowed' });
+                return res.status(400).json({ message: 'Only one Grenier/Combles is allowed' }); // Vérifier qu'il n'y a pas plus d'un Grenier/Combles
             }
         }
 
         if (totalRooms > 18) {
-            return res.status(400).json({ message: 'A maximum of 18 rooms is allowed' });
+            return res.status(400).json({ message: 'A maximum of 18 rooms is allowed' }); // Vérifier que le nombre total de pièces ne dépasse pas 18
         }
 
-        // Loop over each room type in the counts
+        // Boucle sur chaque type de pièce dans les comptes
         for (const [type, newCount] of roomCounts) {
-            const currentRoomsOfType = existingRooms.filter(room => room.type === type);
-            const currentCount = currentRoomsOfType.length;
+            const currentRoomsOfType = existingRooms.filter(room => room.type === type); // Trouver les pièces actuelles de ce type
+            const currentCount = currentRoomsOfType.length; // Compter les pièces actuelles de ce type
 
             // console.log(`Type: ${type}, Current count: ${currentCount}, New count: ${newCount}`);
 
-            // If the new count is greater, add rooms
+            // Si le nouveau compte est supérieur, ajouter des pièces
             if (newCount > currentCount) {
                 for (let i = 0; i < newCount - currentCount; i++) {
-                    const newRoom = new Room({ type, project: projectId });
-                    await newRoom.save();
-                    project.rooms.push(newRoom);
+                    const newRoom = new Room({ type, project: projectId }); // Créer une nouvelle pièce
+                    await newRoom.save(); // Sauvegarder la nouvelle pièce dans la base de données
+                    project.rooms.push(newRoom); // Ajouter la nouvelle pièce à la liste des pièces du projet
                 }
             }
-            // If the new count is lesser, remove rooms
+            // Si le nouveau compte est inférieur, supprimer des pièces
             else if (newCount < currentCount) {
                 for (let i = 0; i < currentCount - newCount; i++) {
                     const roomToRemove = currentRoomsOfType[i];
                     // console.log('Removing room:', roomToRemove.type);
 
-                    // Remove the room from the database
+                    // Supprimer la pièce de la base de données
                     await Room.findByIdAndDelete(roomToRemove._id);
 
-                    // Remove the room from the project's room list
+                    // Supprimer la pièce de la liste des pièces du projet
                     project.rooms = project.rooms.filter(room => !room._id.equals(roomToRemove._id));
                 }
             }
         }
 
-        // Save the updated project
+        // Sauvegarder le projet mis à jour
         await project.save();
 
-        // Return the updated rooms
+        // Retourner les pièces mises à jour
         const updatedRooms = await Room.find({ project: projectId });
         res.status(200).json({ message: 'Rooms updated successfully', rooms: updatedRooms });
     } catch (error) {
         // console.error('Error updating rooms:', error);
-        res.status(500).json({ message: 'Error updating rooms', error });
+        res.status(500).json({ message: 'Error updating rooms', error }); // Gérer les erreurs et renvoyer une réponse appropriée
     }
 });
 
