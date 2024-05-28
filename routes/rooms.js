@@ -145,7 +145,7 @@ router.put("/editRoom", async (req, res) => {
         // Récupération des données de la requête
         const { roomId, name, surface, comment, itemsToAdd, itemsToRemove, itemsToModify } = req.body;
 
-        // console.log('Received request:', req.body); // Log pour déboguer les données reçues
+        console.log('Received request:', req.body); // Log pour déboguer les données reçues
 
         // Vérification de l'existence de la pièce
         let room = await Room.findById(roomId);
@@ -160,10 +160,11 @@ router.put("/editRoom", async (req, res) => {
         if (surface) room.surface = surface; // Met à jour la surface si fournie
         if (comment) room.comment = comment; // Met à jour le commentaire si fourni
 
-        // console.log('Room before updates:', room); // Log pour déboguer l'état de la pièce avant les mises à jour
+        console.log('Room before updates:', room); // Log pour déboguer l'état de la pièce avant les mises à jour
 
         // Ajout des nouveaux items
         if (itemsToAdd && itemsToAdd.length > 0) {
+            console.log("Ajout de nouveau Item")
             itemsToAdd.forEach(item => {
                 // Vérifie si l'item existe déjà dans la pièce
                 const exists = room.items.some(existingItem => existingItem.field === item.field);
@@ -179,13 +180,14 @@ router.put("/editRoom", async (req, res) => {
                     };
                     room.items.push(newItem);
                 } else {
-                    // console.log(`Item with field ${item.field} already exists`); // Log pour déboguer les items déjà existants
+                    console.log(`Item with field ${item.field} already exists`); // Log pour déboguer les items déjà existants
                 }
             });
         }
 
         // Suppression des items
         if (itemsToRemove && itemsToRemove.length > 0) {
+            console.log("Suppression d'item")
             itemsToRemove.forEach(itemField => {
                 // Trouve l'index de l'item à supprimer
                 const itemIndex = room.items.findIndex(item => item.field === itemField);
@@ -198,7 +200,8 @@ router.put("/editRoom", async (req, res) => {
 
         // Modification des items existants
         if (itemsToModify && itemsToModify.length > 0) {
-            // console.log('Items to modify:', itemsToModify); // Log pour déboguer les items à modifier
+            console.log("Modification d'items existants")
+            console.log('Items to modify:', itemsToModify); // Log pour déboguer les items à modifier
             itemsToModify.forEach(modifiedItem => {
                 // Trouve l'index de l'item à modifier
                 const itemIndex = room.items.findIndex(item => item.field === modifiedItem.field);
@@ -206,12 +209,12 @@ router.put("/editRoom", async (req, res) => {
                     // Met à jour la difficulté de l'item
                     room.items[itemIndex].difficulty = modifiedItem.difficulty;
                 } else {
-                    // console.log(`Item with field ${modifiedItem.field} not found`); // Log pour déboguer les items non trouvés
+                    console.log(`Item with field ${modifiedItem.field} not found`); // Log pour déboguer les items non trouvés
                 }
             });
         }
 
-        // console.log('Room after updates:', room); // Log pour déboguer l'état de la pièce après les mises à jour
+        console.log('Room after updates:', room); // Log pour déboguer l'état de la pièce après les mises à jour
 
         // Sauvegarder la pièce avec les modifications
         await room.save();
@@ -219,7 +222,7 @@ router.put("/editRoom", async (req, res) => {
         // Renvoie une réponse de succès avec la pièce mise à jour
         res.status(200).json({ message: 'Room updated successfully', room });
     } catch (error) {
-        // console.error('Error during update:', error); // Log détaillé de l'erreur
+        console.error('Error during update:', error); // Log détaillé de l'erreur
         // Renvoie une réponse d'erreur en cas de problème
         res.status(500).json({ message: 'Error during update', error });
     }
