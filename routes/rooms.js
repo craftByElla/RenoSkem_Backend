@@ -139,85 +139,94 @@ router.post('/updateRooms', async (req, res) => {
 });
 
 //---------------Update détails d'une room (ajoute/supprime/modifie)-----------//
- 
 
 router.put("/editRoom", async (req, res) => {
     try {
-        let room = await Room.findOne({ _id: req.body.roomId });
+        // Récupération des données de la requête
+        const { roomId, name, surface, comment, itemsToAdd, itemsToRemove, itemsToModify } = req.body;
 
+        // console.log('Received request:', req.body); // Log pour déboguer les données reçues
+
+        // Vérification de l'existence de la pièce
+        let room = await Room.findById(roomId);
+
+        // Si la pièce n'existe pas, renvoyer une réponse 404
         if (!room) {
-            return res.status(401).json({ message: 'Room not found' });
-        }
-       
-        if(req.body.name){
-                          
-            room.name = req.body.name;
+            return res.status(404).json({ message: 'Room not found' });
         }
 
-        if(req.body.surface){
-     
-            room.surface = req.body.surface;
-        }
-     
-        if(req.body.comment){
-                          
-            room.comment = req.body.comment;
-        }
-     
-        if(req.body.itemsToAdd != []){
+        // Mise à jour des champs de base de la pièce
+        if (name) room.name = name; // Met à jour le nom si fourni
+        if (surface) room.surface = surface; // Met à jour la surface si fournie
+        if (comment) room.comment = comment; // Met à jour le commentaire si fourni
 
-           for(i = 0; i < req.body.itemsToAdd.length; i++){
-           
-                const newItem = {
+        // console.log('Room before updates:', room); // Log pour déboguer l'état de la pièce avant les mises à jour
 
-                    id: uid2(24),
-                    field: req.body.itemsToAdd[i].field,
-                    difficulty: req.body.itemsToAdd[i].difficulty,
-                    artisan: null,
-                    teammates: []
-                };
-
-                room.items.push(newItem);
-            }
-          
-        }
-      
-        if(req.body.itemsToRemove != []){
-
-            for(i = 0; i < req.body.itemsToRemove.length; i++){
-           
-                const itemIndex = room.items.findIndex((item) => item.id === req.body.itemsToRemove[i]);
-
-                if (itemIndex < 0) {
-                    return res.status(401).json({ message: 'Item to remove not found' });
+        // Ajout des nouveaux items
+        if (itemsToAdd && itemsToAdd.length > 0) {
+            itemsToAdd.forEach(item => {
+                // Vérifie si l'item existe déjà dans la pièce
+                const exists = room.items.some(existingItem => existingItem.field === item.field);
+                if (!exists) {
+                    // Si l'item n'existe pas, il est ajouté à la liste des items
+                    const newItem = {
+                        id: uid2(24), // Génère un identifiant unique
+                        field: item.field,
+                        difficulty: item.difficulty,
+                        diy: true, // Par défaut, l'item est fait maison (DIY)
+                        artisan: null, // Pas d'artisan associé par défaut
+                        teammates: [] // Pas de coéquipiers associés par défaut
+                    };
+                    room.items.push(newItem);
+                } else {
+                    // console.log(`Item with field ${item.field} already exists`); // Log pour déboguer les items déjà existants
                 }
-
-                room.items.splice(itemIndex, 1);
-            }
+            });
         }
- 
-        if(req.body.itemsToModify != []){
 
-            for(i = 0; i < req.body.itemsToModify.length; i++){
-           
-                const itemIndex = room.items.findIndex((item) => item.id === req.body.itemsToModify[i].id);
-             
-                if (itemIndex < 0) {
-                    return res.status(401).json({ message: 'Item to modify not found' });
+        // Suppression des items
+        if (itemsToRemove && itemsToRemove.length > 0) {
+            itemsToRemove.forEach(itemField => {
+                // Trouve l'index de l'item à supprimer
+                const itemIndex = room.items.findIndex(item => item.field === itemField);
+                if (itemIndex !== -1) {
+                    // Supprime l'item de la liste
+                    room.items.splice(itemIndex, 1);
                 }
-    
-                room.items[itemIndex].field = req.body.itemsToModify[i].field;
-                room.items[itemIndex].difficulty = req.body.itemsToModify[i].difficulty;
-            }
+            });
         }
 
+        // Modification des items existants
+        if (itemsToModify && itemsToModify.length > 0) {
+            // console.log('Items to modify:', itemsToModify); // Log pour déboguer les items à modifier
+            itemsToModify.forEach(modifiedItem => {
+                // Trouve l'index de l'item à modifier
+                const itemIndex = room.items.findIndex(item => item.field === modifiedItem.field);
+                if (itemIndex !== -1) {
+                    // Met à jour la difficulté de l'item
+                    room.items[itemIndex].difficulty = modifiedItem.difficulty;
+                } else {
+                    // console.log(`Item with field ${modifiedItem.field} not found`); // Log pour déboguer les items non trouvés
+                }
+            });
+        }
+
+        // console.log('Room after updates:', room); // Log pour déboguer l'état de la pièce après les mises à jour
+
+        // Sauvegarder la pièce avec les modifications
         await room.save();
 
-        res.status(200).json({ message: 'Room updated successfully', room: room });
+        // Renvoie une réponse de succès avec la pièce mise à jour
+        res.status(200).json({ message: 'Room updated successfully', room });
     } catch (error) {
+        // console.error('Error during update:', error); // Log détaillé de l'erreur
+        // Renvoie une réponse d'erreur en cas de problème
         res.status(500).json({ message: 'Error during update', error });
     }
 });
+
+
+
 
 
 
@@ -551,20 +560,29 @@ router.put("/removeItemFromArtisan/:roomId/:itemId/", async (req, res) => {
 
 
 
+//----route pour supprimer une room dans la collection room mais aussi dans le tableau d'objectId du projet correspondant--------//
 
 router.delete("/deleteRoom/:id", async (req, res) => {
     try {
-        const room = await Room.findByIdAndDelete({ _id: req.params.id });
+        // console.log('Deleting room with ID:', req.params.id); // Log pour vérifier l'ID
+        const room = await Room.findByIdAndDelete(req.params.id);
 
         if (!room) {
             return res.status(401).json({ message: 'Room not found' });
         }
 
+        // console.log('Room found and deleted:', room); // Log pour vérifier la suppression
+
+        // Mettre à jour le projet pour supprimer la référence de la pièce
+        await Project.findByIdAndUpdate(room.project, { $pull: { rooms: room._id } });
+
         res.status(200).json({ message: 'Room deleted successfully', room: room });
     } catch (error) {
+        // console.error('Error during deletion:', error); // Log pour vérifier les erreurs
         res.status(500).json({ message: 'Error during deletion', error });
     }
 });
+
 
 
 
