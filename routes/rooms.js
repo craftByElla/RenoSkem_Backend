@@ -5,10 +5,11 @@ require('../models/connection');
 const Room = require('../models/room');
 const Teammate = require('../models/teammate');
 const Artisan = require('../models/artisan');
+const Project = require('../models/project');
 const uid2 = require('uid2');
 
 
-
+//------------Création de room-----------//
 router.post('/newRoom', async (req, res) => {
     try {
         const newRoom = new Room({
@@ -30,7 +31,7 @@ router.post('/newRoom', async (req, res) => {
     }
 });
 
-
+//------------Récupère une room avec son id----------------//
 
 router.get("/getRoom/:id", async (req, res) => {
     try {
@@ -45,6 +46,181 @@ router.get("/getRoom/:id", async (req, res) => {
         res.status(500).json({ message: 'Error during search', error });
     }
 });
+
+//------------Récupère les rooms d'un projet-----------//
+router.get('/getRoomsByProject/:projectId', async (req, res) => {
+    try {
+        const projectId = req.params.projectId;
+        // console.log(`Fetching rooms for project: ${projectId}`);
+        const rooms = await Room.find({ project: projectId });
+
+        if (!rooms) {
+            return res.status(404).json({ message: 'Rooms not found' });
+        }
+
+        res.status(200).json({ rooms });
+    } catch (error) {
+        // console.error('Error fetching rooms:', error);
+        res.status(500).json({ message: 'Error during search', error });
+    }
+});
+
+
+
+//-----------Met à jour les pièces d'un projet--------------//
+router.post('/updateRooms', async (req, res) => {
+
+    const { projectId, rooms } = req.body; // Récupérer l'ID du projet et les nouvelles pièces du corps de la requête
+    // console.log('Updating rooms for project:', projectId, rooms);
+
+    try {
+        // Trouver le projet par ID et peupler les pièces associées
+        const project = await Project.findById(projectId).populate('rooms');
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' }); // Retourner une erreur si le projet n'est pas trouvé
+        }
+
+        const existingRooms = project.rooms; // Obtenir les pièces existantes du projet
+        // console.log('Existing rooms:', existingRooms.length);
+
+        const roomCounts = Object.entries(rooms); // Convertir les pièces en un tableau d'entrées [type, count]
+
+        let totalRooms = 0;
+        for (const [type, newCount] of roomCounts) {
+            totalRooms += newCount; // Calculer le nombre total de pièces
+            if (type === 'Grenier/Combles' && newCount > 1) {
+                return res.status(400).json({ message: 'Only one Grenier/Combles is allowed' }); // Vérifier qu'il n'y a pas plus d'un Grenier/Combles
+            }
+        }
+
+        if (totalRooms > 18) {
+            return res.status(400).json({ message: 'A maximum of 18 rooms is allowed' }); // Vérifier que le nombre total de pièces ne dépasse pas 18
+        }
+
+        // Boucle sur chaque type de pièce dans les comptes
+        for (const [type, newCount] of roomCounts) {
+            const currentRoomsOfType = existingRooms.filter(room => room.type === type); // Trouver les pièces actuelles de ce type
+            const currentCount = currentRoomsOfType.length; // Compter les pièces actuelles de ce type
+
+            // console.log(`Type: ${type}, Current count: ${currentCount}, New count: ${newCount}`);
+
+            // Si le nouveau compte est supérieur, ajouter des pièces
+            if (newCount > currentCount) {
+                for (let i = 0; i < newCount - currentCount; i++) {
+                    const newRoom = new Room({ type, project: projectId }); // Créer une nouvelle pièce
+                    await newRoom.save(); // Sauvegarder la nouvelle pièce dans la base de données
+                    project.rooms.push(newRoom); // Ajouter la nouvelle pièce à la liste des pièces du projet
+                }
+            }
+            // Si le nouveau compte est inférieur, supprimer des pièces
+            else if (newCount < currentCount) {
+                for (let i = 0; i < currentCount - newCount; i++) {
+                    const roomToRemove = currentRoomsOfType[i];
+                    // console.log('Removing room:', roomToRemove.type);
+
+                    // Supprimer la pièce de la base de données
+                    await Room.findByIdAndDelete(roomToRemove._id);
+
+                    // Supprimer la pièce de la liste des pièces du projet
+                    project.rooms = project.rooms.filter(room => !room._id.equals(roomToRemove._id));
+                }
+            }
+        }
+
+        // Sauvegarder le projet mis à jour
+        await project.save();
+
+        // Retourner les pièces mises à jour
+        const updatedRooms = await Room.find({ project: projectId });
+        res.status(200).json({ message: 'Rooms updated successfully', rooms: updatedRooms });
+    } catch (error) {
+        // console.error('Error updating rooms:', error);
+        res.status(500).json({ message: 'Error updating rooms', error }); // Gérer les erreurs et renvoyer une réponse appropriée
+    }
+});
+
+//---------------Update détails d'une room (ajoute/supprime/modifie)-----------//
+ 
+
+router.put("/editRoom", async (req, res) => {
+    try {
+        let room = await Room.findOne({ _id: req.body.roomId });
+
+        if (!room) {
+            return res.status(401).json({ message: 'Room not found' });
+        }
+       
+        if(req.body.name){
+                          
+            room.name = req.body.name;
+        }
+
+        if(req.body.surface){
+     
+            room.surface = req.body.surface;
+        }
+     
+        if(req.body.comment){
+                          
+            room.comment = req.body.comment;
+        }
+     
+        if(req.body.itemsToAdd != []){
+
+           for(i = 0; i < req.body.itemsToAdd.length; i++){
+           
+                const newItem = {
+
+                    id: uid2(24),
+                    field: req.body.itemsToAdd[i].field,
+                    difficulty: req.body.itemsToAdd[i].difficulty,
+                    artisan: null,
+                    teammates: []
+                };
+
+                room.items.push(newItem);
+            }
+          
+        }
+      
+        if(req.body.itemsToRemove != []){
+
+            for(i = 0; i < req.body.itemsToRemove.length; i++){
+           
+                const itemIndex = room.items.findIndex((item) => item.id === req.body.itemsToRemove[i]);
+
+                if (itemIndex < 0) {
+                    return res.status(401).json({ message: 'Item to remove not found' });
+                }
+
+                room.items.splice(itemIndex, 1);
+            }
+        }
+ 
+        if(req.body.itemsToModify != []){
+
+            for(i = 0; i < req.body.itemsToModify.length; i++){
+           
+                const itemIndex = room.items.findIndex((item) => item.id === req.body.itemsToModify[i].id);
+             
+                if (itemIndex < 0) {
+                    return res.status(401).json({ message: 'Item to modify not found' });
+                }
+    
+                room.items[itemIndex].field = req.body.itemsToModify[i].field;
+                room.items[itemIndex].difficulty = req.body.itemsToModify[i].difficulty;
+            }
+        }
+
+        await room.save();
+
+        res.status(200).json({ message: 'Room updated successfully', room: room });
+    } catch (error) {
+        res.status(500).json({ message: 'Error during update', error });
+    }
+});
+
+
 
 /*
 router.put("/editRoom/:id/:name/:surface/:comment", async (req, res) => {

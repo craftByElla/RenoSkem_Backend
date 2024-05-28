@@ -8,6 +8,7 @@ const Artisan = require('../models/artisan');
 
 router.post('/newArtisan', async (req, res) => {
   try {
+    
     const newArtisan = new Artisan({
       
         email: req.body.email,
