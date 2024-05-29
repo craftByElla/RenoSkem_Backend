@@ -5,7 +5,7 @@ require('../models/connection');
 const Project = require('../models/project');
 const Room = require('../models/room');
 const User = require('../models/user');
-
+const Artisan = require('../models/artisan');
 
 //-------Route pour créer un nouveau projet-----------//
 router.post('/newProject', async (req, res) => {
@@ -33,6 +33,8 @@ router.post('/newProject', async (req, res) => {
 
     // console.log('Nouveau projet avant sauvegarde :', newProject);
 
+    user.projects.push(newProject._id);
+    
     await newProject.save();
 
     // console.log('Nouveau projet après sauvegarde :', newProject);
@@ -273,10 +275,14 @@ console.log('req.body: ', req.body)
 
  
 
-router.get("/getProjectArtisans", async (req, res) => {
+router.get("/getProjectArtisans/:projectId", async (req, res) => {
   try {
 
-    const project = await Project.findOne({ _id: req.body.projectId });
+    const project = await Project.findOne({ _id: req.params.projectId }).populate({
+      path: 'artisans.artisanId',
+      model: Artisan
+    });
+    // console.log(project.artisans[0].artisanId)
 
     if (!project) {
       return res.status(401).json({ message: 'Project not found' });
@@ -291,6 +297,59 @@ router.get("/getProjectArtisans", async (req, res) => {
     res.status(500).json({ message: 'Error during search', error });
   }
 });
+
+router.put("/editProjectArtisan/:projectId/:artisanId", async (req, res) => {
+  try {
+    const project = await Project.findOne({ _id: req.params.projectId });
+    
+    if (!project) {
+      return res.status(401).json({ message: 'Project not found' });
+    }
+    
+    const index = await project.artisans.findIndex((artisan) => artisan._id.toString() === req.params.artisanId);
+    console.log(req.body)
+    console.log(index)
+    if (index < 0) {
+      return res.status(402).json({ message: 'Artisan not found' });
+    }
+    
+    project.artisans[index].availability = req.body.availability;
+    project.artisans[index].trustLevel = req.body.trustLevel;
+    project.artisans[index].quote = req.body.quote;
+    project.artisans[index].comment = req.body.comment;
+    
+    await project.save();
+    
+    res.status(200).json({ message: 'Project updated successfully', project: project });
+      } catch (error) {
+        res.status(500).json({ message: 'Error during update', error });
+      }
+    });
+
+    router.put("/removeArtisanFromProject/:projectId/:artisanId", async (req, res) => {
+      try {
+    
+        const project = await Project.findOne({ _id: req.params.projectId });
+        console.log('project', project)
+        if (!project) {
+          return res.status(401).json({ message: 'Project not found' });
+        }
+
+        const artisanIndex = await project.artisans.findIndex((artisan) => artisan.artisanId.toString() === req.params.artisanId);
+        
+        if (artisanIndex < 0) {
+          return res.status(402).json({ message: 'Artisan not found' });
+        }
+        console.log('artisanIndex', artisanIndex)
+        await project.artisans.splice(artisanIndex, 1);
+    
+        await project.save();
+    
+        res.status(200).json({ message: 'Artisans removed successfully', project: project });
+      } catch (error) {
+        res.status(500).json({ message: 'Error during removal', error });
+      }
+    });
 
 module.exports = router;
 
