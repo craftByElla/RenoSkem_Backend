@@ -26,7 +26,7 @@ router.post('/newProject', async (req, res) => {
       user: userId,
       name: req.body.name,
       budget: req.body.budget,
-      picture: req.body.picture,
+      picture: req.body.picture ? `projectIcon/${req.body.picture}` : null, //Stockage du chemin relatif de l'avatar et non l'URL complète
       location: req.body.location,
       comment: req.body.comment,
     });
@@ -54,7 +54,7 @@ router.put("/editproject/:id", async (req, res) => {
           name: req.body.name,
           budget: req.body.budget,
           location: req.body.location,
-          picture: req.body.picture,
+          picture: req.body.picture ? `projectIcon/${req.body.picture}` : null, //Stockage du chemin relatif de l'avatar et non l'URL complète
           comment: req.body.comment,
       }, { new: true });
       

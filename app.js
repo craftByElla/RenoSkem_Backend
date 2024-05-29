@@ -51,6 +51,7 @@ app.use('/rooms', roomsRouter);
 app.use('/skills', skillsRouter);
 app.use('/artisans', artisansRouter);
 app.use('/teammates', teammatesRouter);
+app.use('/assets', express.static(path.join(__dirname, '../RenoSkem_Frontend/assets'))); //Pour que Express serve les fichiers statiques depuis le dossier contenant les images 
 
 
 module.exports = app;

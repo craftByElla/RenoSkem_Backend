@@ -157,8 +157,8 @@ router.post('/signup', async (req, res) => {
       name: req.body.name,
       email: req.body.email,
       password: hashedPassword,
-      avatar: req.body.avatar,
-      skills: req.body.skills, //pas sur que c'est comme ça qu'on appelle la clé étrangère ?
+      avatar: req.body.avatar ? `avatar/${req.body.avatar}` : null, //Stockage du chemin relatif de l'avatar et non l'URL complète
+      skills: req.body.skills, 
       token: uid2(32), // Génère un token unique de 32 caractères
     });
 
