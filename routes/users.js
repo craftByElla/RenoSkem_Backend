@@ -242,5 +242,27 @@ router.get("/getUserArtisansByField", async (req, res) => {
 
 });
 
+router.get("/getUserProjects/:token", async (req, res) => {
+  try {
+const user = await User.findOne({ token: req.params.token });
+
+if (!user) {
+
+  return res.status(401).json({ message: 'User not found' });
+
+}
+
+if (!user.projects.length) {
+
+  return res.status(401).json({ message: 'No project found' });
+
+}
+
+res.status(200).json({ message: 'Projects found', projects: user.projects });
+  } catch (error) {
+    res.status(500).json({ message: 'Error during search', error });
+  }
+});
+
 module.exports = router;
 

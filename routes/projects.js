@@ -10,38 +10,30 @@ const Artisan = require('../models/artisan');
 //-------Route pour créer un nouveau projet-----------//
 router.post('/newProject', async (req, res) => {
   try {
-    // console.log('Requête reçue avec les données :', req.body);
+const user = await User.findOne({ token: req.body.token });
 
-    const user = await User.findOne({ token: req.body.token });
+const newProject = new Project({
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+  name: req.body.name,
+  budget: req.body.budget,
+  location: req.body.location,
+  comment: req.body.comment,
 
-    const userId = user._id;
+});
 
-    // console.log('Image reçue :', req.body.picture);
+if (!(newProject && user)) {
+  return res.status(401).json({ message: 'User or project not found' });
+}
 
-    const newProject = new Project({
-      user: userId,
-      name: req.body.name,
-      budget: req.body.budget,
-      picture: req.body.picture,
-      location: req.body.location,
-      comment: req.body.comment,
-    });
+user.projects.push(newProject._id);
 
-    // console.log('Nouveau projet avant sauvegarde :', newProject);
+await user.save();
 
-    user.projects.push(newProject._id);
-    
-    await newProject.save();
+await newProject.save();
 
-    // console.log('Nouveau projet après sauvegarde :', newProject);
-
-    res.status(201).json({ message: 'Project successfully created', project: newProject });
+res.status(201).json({ message: 'Project successfully created', project: newProject });
   } catch (error) {
-    res.status(500).json({ message: 'Error saving project', error: error.message });
+    res.status(500).json({ message: 'Error saving project', error });
   }
 });
 //--------Route pour modifier un projet------------//
