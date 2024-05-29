@@ -56,10 +56,10 @@ else if(req.body.currentPassword){
         return res.status(401).json({ message: 'Password incorrect' });
     } else {
         const hashedPassword = await bcrypt.hash(req.body.newPassword, 10);
-        await User.updateOne({ token: req.params.token }, { name: req.body.name, password: hashedPassword, avatar: req.body.avatar }, {new: true});
+        await User.updateOne({ token: req.params.token }, { name: req.body.name, password: hashedPassword, avatar: req.body.avatar ? `avatar/${req.body.avatar}` : null }, {new: true});
       }
 } else {
-    await User.updateOne({ token: req.params.token }, { name: req.body.name, avatar: req.body.avatar }, {new: true})
+    await User.updateOne({ token: req.params.token }, { name: req.body.name, avatar: req.body.avatar ? `avatar/${req.body.avatar}` : null  }, {new: true})
 }
 
 res.status(200).json({ message: 'User profile updated successfully', user: user });
