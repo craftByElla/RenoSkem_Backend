@@ -32,7 +32,10 @@ router.post('/newProject', async (req, res) => {
     });
 
     // console.log('Nouveau projet avant sauvegarde :', newProject);
-
+    // Ajoute le projet au profil du user
+    user.projects.push(newProject._id);
+    await user.save();
+    //Enregistre le projet dans la base de données projets
     await newProject.save();
 
     // console.log('Nouveau projet après sauvegarde :', newProject);
@@ -42,8 +45,9 @@ router.post('/newProject', async (req, res) => {
     res.status(500).json({ message: 'Error saving project', error: error.message });
   }
 });
-//--------Route pour modifier un projet------------//
 
+
+//--------Route pour modifier un projet------------//
 router.put("/editproject/:id", async (req, res) => {
   // console.log("PUT /editproject/:id called");
   // console.log("req.params.id:", req.params.id);
@@ -71,27 +75,6 @@ router.put("/editproject/:id", async (req, res) => {
   }
 });
 
-//---------Route pour chercher un projet by id ---------//
-
-router.get("/getProject/:id", async (req, res) => {
-  // console.log("GET /getProject/:id called");
-  // console.log("req.params.id:", req.params.id);
- 
-  
-  try {
-      const project = await Project.findOne({ _id: req.params.id });
-      // console.log("project:", project);
-
-      if (!project) {
-          return res.status(401).json({ message: 'Project not found' });
-      }
-
-      res.status(200).json({ message: 'Project found', project: project });
-  } catch (error) {
-      // console.error("Error during search:", error);
-      res.status(500).json({ message: 'Error during search', error });
-  }
-});
 
 //--------Route pour récupérer tout les projets d'un utilisateur------------//
  
@@ -122,111 +105,64 @@ router.get("/getUserProjects/:token", async (req, res) => {
   }
 });
 
+//---------Route pour chercher un projet by id ---------//
 
+router.get("/getProject/:id", async (req, res) => {
+  // console.log("GET /getProject/:id called");
+  // console.log("req.params.id:", req.params.id);
+ 
+  
+  try {
+      const project = await Project.findOne({ _id: req.params.id });
+      // console.log("project:", project);
 
-    //------Route pour épingler un projet------------//
-    router.put("/setIsProjectPinned/:id/:pinned", async (req, res) => {
-        try {
-          const project = await Project.findByIdAndUpdate({ _id: req.params.id }, {
-              pinned: req.params.pinned,
-              }, {new: true});
+      if (!project) {
+          return res.status(401).json({ message: 'Project not found' });
+      }
+
+      res.status(200).json({ message: 'Project found', project: project });
+  } catch (error) {
+      // console.error("Error during search:", error);
+      res.status(500).json({ message: 'Error during search', error });
+  }
+});
+
+//------Route pour épingler un projet------------//
+router.put("/setIsProjectPinned/:id/:pinned", async (req, res) => {
+  try {
+    const project = await Project.findByIdAndUpdate({ _id: req.params.id }, {
+        pinned: req.params.pinned,
+        }, {new: true});
       
-          if (!project) {
-            return res.status(401).json({ message: 'Project not found' });
-          }
+    if (!project) {
+      return res.status(401).json({ message: 'Project not found' });
+    }
       
-          res.status(200).json({ message: 'Project profile updated successfully', project: project });
-        } catch (error) {
-          res.status(500).json({ message: 'Error during update', error });
-        }
-      });
+    res.status(200).json({ message: 'Project profile updated successfully', project: project });
+  } catch (error) {
+    res.status(500).json({ message: 'Error during update', error });
+  }
+});
 
-    //------Route pour archiver un projet------------//
-    router.put("/setIsProjectArchived/:id/:archived", async (req, res) => {
-        try {
-          const project = await Project.findByIdAndUpdate({ _id: req.params.id }, {
-              archived: req.params.archived,
-              }, {new: true});
+//------Route pour archiver un projet------------//
+router.put("/setIsProjectArchived/:id/:archived", async (req, res) => {
+  try {
+    const project = await Project.findByIdAndUpdate({ _id: req.params.id }, {
+         archived: req.params.archived,
+         }, {new: true});
       
-          if (!project) {
-            return res.status(401).json({ message: 'Project not found' });
-          }
+    if (!project) {
+      return res.status(401).json({ message: 'Project not found' });
+    }
       
-          res.status(200).json({ message: 'Project profile updated successfully', project: project });
-        } catch (error) {
-          res.status(500).json({ message: 'Error during update', error });
-        }
-      });
+    res.status(200).json({ message: 'Project profile updated successfully', project: project });
+  } catch (error) {
+    res.status(500).json({ message: 'Error during update', error });
+  }
+});
 
 
-    
-    
-
-    router.put("/addRoomToProject/:projectId/:roomId", async (req, res) => {
-        try {
-    
-            const project = await Project.findOne({ _id: req.params.projectId });
-            const room = await Room.findOne({ _id: req.params.roomId });
-    
-            if (!project) {
-                return res.status(401).json({ message: 'Project not found' });
-            }
-    
-            if (!room) {
-                return res.status(401).json({ message: 'Room not found' });
-            }
-    
-            if (project.rooms.includes(req.params.roomId)) {
-                return res.status(401).json({ message: 'Room already added to project' });
-            }
-
-            project.rooms.push(req.params.roomId);
-
-            await project.save();
-    
-            res.status(200).json({ message: 'Room added to project successfully', room: room });
-    
-        } catch (error) {
-            res.status(500).json({ message: 'Error during update', error });
-        }
-    });
-
-
-    router.put("/removeRoomFromProject/:projectId/:roomId", async (req, res) => {
-        try {
-    
-            const project = await Project.findOne({ _id: req.params.projectId });
-            // console.log(project);
-    
-            if (!project) {
-                return res.status(401).json({ message: 'Project not found' });
-            }
-
-            if (!project.rooms.length) {
-                return res.status(401).json({ message: 'No room found in project' });
-            }
-
-            const index = await project.rooms.findIndex((room) => room._id.toString() === req.params.roomId);
-            // console.log(project.rooms);
-            // console.log(req.params.roomId);
-
-            if (index < 0) {
-                return res.status(401).json({ message: 'Room not found' });
-            }
-
-            project.rooms.splice(index, 1);
-
-            await project.save();
-    
-            res.status(200).json({ message: 'Room removed from project successfully', project: project });
-    
-        } catch (error) {
-            res.status(500).json({ message: 'Error during update', error });
-        }
-    });
-
-
-  //------Route pour supprimer un projet-----------/
+  //------Route pour supprimer un projet-----------//
   router.delete("/deleteProject/:id", async (req, res) => {
     // console.log("Requête reçue pour supprimer le projet avec l'ID:", req.params.id);
     try {
@@ -243,34 +179,201 @@ router.get("/getUserProjects/:token", async (req, res) => {
     }
 });
 
+ 
+//-----à refaire sans le token car il est deja dans le projet-------//
+// /-----------------------------------------------Suppression d'un projet-------------------------------------------//
 
+// router.delete("/deleteProject/:projectId", async (req, res) => {
+//   try {
 
+//     const project = await Project.findOne({ _id: req.params.projectId });
 
-  router.put("/addArtisanToProject/:projectId/:field/:difficulty", async (req, res) => {
-    try {
+//     const user = await User.findOne({ token: req.body.token });
 
-        const item = {
+//     if (!(project && user)) {
+//       return res.status(401).json({ message: 'Project or user not found' });
+//     }
 
-            id: uid2(24),
-            field: req.params.field,
-            difficulty: req.params.difficulty,
-            /*diy: true,
-            artisan: null,        
-            teammates: null,*/
-        };
+//     if (project.rooms.length) {
 
-        const room = await Room.findByIdAndUpdate({ _id: req.params.roomId }, { $push: { items: item } }, { new: true, useFindAndModify: false });
+//       for (let i = 0; i < project.rooms.length; i++) {
+//         await Room.deleteOne({ _id: project.rooms[i] });
+//       }
+//     }
 
-        if (!room) {
-            return res.status(401).json({ message: 'Room not found' });
-        }
+//     const projectIndex = await user.projects.findIndex((project) => project.toString() === req.body.projectId);
 
-        res.status(200).json({ message: 'Room updated successfully', room: room });
-    } catch (error) {
-        res.status(500).json({ message: 'Error during update', error });
+//     if (projectIndex < 0) {
+//       return res.status(401).json({ message: 'Project not found' });
+//     }
+
+//     user.projects.splice(projectIndex, 1);
+
+//     await user.save();
+
+//     await Project.deleteOne({ _id: req.body.projectId });
+
+//     res.status(200).json({ message: 'Project deleted successfully', project: project });
+
+//   } catch (error) {
+//     res.status(500).json({ message: 'Error during deletion', error });
+//   }
+// });
+
+ 
+//-------------------------------------------Ajout d'un artisan au projet------------------------------------//
+router.put("/addArtisanToProject", async (req, res) => {
+  try {
+
+    const projectArtisan = {
+
+      artisanId: req.body.artisanId,
+      availability: req.body.availability,
+      trustLevel: req.body.trustLevel,
+      quote: req.body.quote,
+      comment: req.body.comment
+
     }
+
+    const artisan = await Artisan.findOne({ _id: req.body.artisanId });
+
+    const project = await Project.findByIdAndUpdate({ _id: req.body.projectId }, { $push: { artisans: projectArtisan } }, { new: true, useFindAndModify: false });
+
+    if (!project) {
+      return res.status(401).json({ message: 'Project not found' });
+    }
+
+    res.status(200).json({ message: 'Project updated successfully', project: project });
+  } catch (error) {
+    res.status(500).json({ message: 'Error during update', error });
+  }
 });
 
+//---------------------------------------------Modification d'un artisan lié à un projet--------------------------------//
+router.put("/editProjectArtisan", async (req, res) => {
+  try {
+
+    const project = await Project.findOne({ _id: req.body.projectId });
+
+    if (!project) {
+      return res.status(401).json({ message: 'Project not found' });
+    }
+
+    const index = await project.artisans.findIndex((artisan) => artisan.artisanId.toString() === req.body.artisanId);
+
+    if (index < 0) {
+      return res.status(401).json({ message: 'Artisan not found' });
+    }
+
+    project.artisans[index].availability = req.body.availability;
+    project.artisans[index].trustLevel = req.body.trustLevel;
+    project.artisans[index].quote = req.body.quote;
+    project.artisans[index].comment = req.body.comment;
+
+    await project.save();
+
+    res.status(200).json({ message: 'Project updated successfully', project: project });
+  } catch (error) {
+    res.status(500).json({ message: 'Error during update', error });
+  }
+});
+
+
+//------------------------------------------Suppression d'un artisan lié à un projet---------------------------------//
+router.put("/removeArtisanFromProject", async (req, res) => {
+  try {
+
+    const project = await Project.findOne({ _id: req.body.projectId });
+
+    if (!project) {
+      return res.status(401).json({ message: 'Project not found' });
+    }
+
+    const artisanIndex = await project.artisans.findIndex((artisan) => artisan.artisanId.toString() === req.body.artisanId);
+
+    if (artisanIndex < 0) {
+      return res.status(402).json({ message: 'Artisan not found' });
+    }
+
+    await project.artisans.splice(artisanIndex, 1);
+
+    await project.save();
+
+    res.status(200).json({ message: 'Artisan removed successfully', project: project });
+  } catch (error) {
+    res.status(500).json({ message: 'Error during removal', error });
+  }
+});
+
+
+
+//--------ROUTES NON UTILISÉES---------//
+
+ 
+
+// //---------------Ajout d'une pièce à un projet-------------------------//
+// router.put("/addRoomToProject", async (req, res) => {
+//   try {
+
+//     const project = await Project.findOne({ _id: req.body.projectId });
+
+//     const room = await Room.findOne({ _id: req.body.roomId });
+
+//     if (!project) {
+//       return res.status(401).json({ message: 'Project not found' });
+//     }
+
+//     if (!room) {
+//       return res.status(401).json({ message: 'Room not found' });
+//     }
+
+//     if (project.rooms.includes(req.body.roomId)) {
+//       return res.status(401).json({ message: 'Room already added to project' });
+//     }
+
+//     project.rooms.push(req.body.roomId);
+
+//     await project.save();
+
+//     res.status(200).json({ message: 'Room added to project successfully', room: room });
+
+//   } catch (error) {
+//     res.status(500).json({ message: 'Error during update', error });
+//   }
+// });
+//------Route qui retire une room d'un projet-------//
+// router.put("/removeRoomFromProject/:projectId/:roomId", async (req, res) => {
+//   try {
+
+//       const project = await Project.findOne({ _id: req.params.projectId });
+//       // console.log(project);
+
+//       if (!project) {
+//           return res.status(401).json({ message: 'Project not found' });
+//       }
+
+//       if (!project.rooms.length) {
+//           return res.status(401).json({ message: 'No room found in project' });
+//       }
+
+//       const index = await project.rooms.findIndex((room) => room._id.toString() === req.params.roomId);
+//       // console.log(project.rooms);
+//       // console.log(req.params.roomId);
+
+//       if (index < 0) {
+//           return res.status(401).json({ message: 'Room not found' });
+//       }
+
+//       project.rooms.splice(index, 1);
+
+//       await project.save();
+
+//       res.status(200).json({ message: 'Room removed from project successfully', project: project });
+
+//   } catch (error) {
+//       res.status(500).json({ message: 'Error during update', error });
+//   }
+// });
 
 module.exports = router;
 

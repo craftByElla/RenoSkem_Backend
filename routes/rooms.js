@@ -9,71 +9,17 @@ const Project = require('../models/project');
 const uid2 = require('uid2');
 
 
-//------------Création de room-----------//
-router.post('/newRoom', async (req, res) => {
-    try {
-        const newRoom = new Room({
-
-            type: req.body.type,
-           // name: req.body.name,
-            //items: req.body.items,
-            //surface: req.body.surface,
-            //comment: req.body.comment,
-            //project: req.body.project
-
-        });
-
-        await newRoom.save();
-
-        res.status(201).json({ message: 'Room successfully added', room: newRoom });
-    } catch (error) {
-        res.status(500).json({ message: 'Error saving room', error });
-    }
-});
-
-//------------Récupère une room avec son id----------------//
-
-router.get("/getRoom/:id", async (req, res) => {
-    try {
-        const room = await Room.findOne({ _id: req.params.id });
-
-        if (!room) {
-            return res.status(401).json({ message: 'Room not found' });
-        }
-
-        res.status(200).json({ message: 'Room found', room: room });
-    } catch (error) {
-        res.status(500).json({ message: 'Error during search', error });
-    }
-});
-
-//------------Récupère les rooms d'un projet-----------//
-router.get('/getRoomsByProject/:projectId', async (req, res) => {
-    try {
-        const projectId = req.params.projectId;
-        // console.log(`Fetching rooms for project: ${projectId}`);
-        const rooms = await Room.find({ project: projectId });
-
-        if (!rooms) {
-            return res.status(404).json({ message: 'Rooms not found' });
-        }
-
-        res.status(200).json({ rooms });
-    } catch (error) {
-        // console.error('Error fetching rooms:', error);
-        res.status(500).json({ message: 'Error during search', error });
-    }
-});
-
-
 
 //-----------Met à jour les pièces d'un projet--------------//
+//-----il faut ajouter l'id du projet dans user-------------// // Mettre à jour le projet pour supprimer la référence de la pièce
+        // exemple await Project.findByIdAndUpdate(room.project, { $pull: { rooms: room._id } });
+
 router.post('/updateRooms', async (req, res) => {
     const { projectId, rooms } = req.body; // Récupérer l'ID du projet et les nouvelles pièces du corps de la requête
     // console.log('Updating rooms for project:', projectId, rooms);
 
     try {
-        // Trouver le projet par ID et peupler les pièces associées
+        // Trouver le projet par ID et populate les pièces associées
         const project = await Project.findById(projectId).populate('rooms');
         if (!project) {
             return res.status(404).json({ message: 'Project not found' }); // Retourner une erreur si le projet n'est pas trouvé
@@ -138,14 +84,46 @@ router.post('/updateRooms', async (req, res) => {
     }
 });
 
-//---------------Update détails d'une room (ajoute/supprime/modifie)-----------//
+//------------Récupère une room avec son id----------------//
+router.get("/getRoom/:id", async (req, res) => {
+    try {
+        const room = await Room.findOne({ _id: req.params.id });
 
+        if (!room) {
+            return res.status(401).json({ message: 'Room not found' });
+        }
+
+        res.status(200).json({ message: 'Room found', room: room });
+    } catch (error) {
+        res.status(500).json({ message: 'Error during search', error });
+    }
+});
+
+//------------Récupère les rooms d'un projet-----------//
+router.get('/getRoomsByProject/:projectId', async (req, res) => {
+    try {
+        const projectId = req.params.projectId;
+        // console.log(`Fetching rooms for project: ${projectId}`);
+        const rooms = await Room.find({ project: projectId });
+
+        if (!rooms) {
+            return res.status(404).json({ message: 'Rooms not found' });
+        }
+
+        res.status(200).json({ rooms });
+    } catch (error) {
+        // console.error('Error fetching rooms:', error);
+        res.status(500).json({ message: 'Error during search', error });
+    }
+});
+
+//---------------Update détails d'une room (ajoute/supprime/modifie)-----------//
 router.put("/editRoom", async (req, res) => {
     try {
         // Récupération des données de la requête
         const { roomId, name, surface, comment, itemsToAdd, itemsToRemove, itemsToModify } = req.body;
 
-        console.log('Received request:', req.body); // Log pour déboguer les données reçues
+        // console.log('Received request:', req.body); // Log pour déboguer les données reçues
 
         // Vérification de l'existence de la pièce
         let room = await Room.findById(roomId);
@@ -160,11 +138,11 @@ router.put("/editRoom", async (req, res) => {
         if (surface) room.surface = surface; // Met à jour la surface si fournie
         if (comment) room.comment = comment; // Met à jour le commentaire si fourni
 
-        console.log('Room before updates:', room); // Log pour déboguer l'état de la pièce avant les mises à jour
+        // console.log('Room before updates:', room); // Log pour déboguer l'état de la pièce avant les mises à jour
 
         // Ajout des nouveaux items
         if (itemsToAdd && itemsToAdd.length > 0) {
-            console.log("Ajout de nouveau Item")
+            // console.log("Ajout de nouveau Item")
             itemsToAdd.forEach(item => {
                 // Vérifie si l'item existe déjà dans la pièce
                 const exists = room.items.some(existingItem => existingItem.field === item.field);
@@ -180,14 +158,14 @@ router.put("/editRoom", async (req, res) => {
                     };
                     room.items.push(newItem);
                 } else {
-                    console.log(`Item with field ${item.field} already exists`); // Log pour déboguer les items déjà existants
+                    // console.log(`Item with field ${item.field} already exists`); // Log pour déboguer les items déjà existants
                 }
             });
         }
 
         // Suppression des items
         if (itemsToRemove && itemsToRemove.length > 0) {
-            console.log("Suppression d'item")
+            // console.log("Suppression d'item")
             itemsToRemove.forEach(itemField => {
                 // Trouve l'index de l'item à supprimer
                 const itemIndex = room.items.findIndex(item => item.field === itemField);
@@ -200,8 +178,8 @@ router.put("/editRoom", async (req, res) => {
 
         // Modification des items existants
         if (itemsToModify && itemsToModify.length > 0) {
-            console.log("Modification d'items existants")
-            console.log('Items to modify:', itemsToModify); // Log pour déboguer les items à modifier
+            // console.log("Modification d'items existants")
+            // console.log('Items to modify:', itemsToModify); // Log pour déboguer les items à modifier
             itemsToModify.forEach(modifiedItem => {
                 // Trouve l'index de l'item à modifier
                 const itemIndex = room.items.findIndex(item => item.field === modifiedItem.field);
@@ -209,12 +187,12 @@ router.put("/editRoom", async (req, res) => {
                     // Met à jour la difficulté de l'item
                     room.items[itemIndex].difficulty = modifiedItem.difficulty;
                 } else {
-                    console.log(`Item with field ${modifiedItem.field} not found`); // Log pour déboguer les items non trouvés
+                    // console.log(`Item with field ${modifiedItem.field} not found`); // Log pour déboguer les items non trouvés
                 }
             });
         }
 
-        console.log('Room after updates:', room); // Log pour déboguer l'état de la pièce après les mises à jour
+        // console.log('Room after updates:', room); // Log pour déboguer l'état de la pièce après les mises à jour
 
         // Sauvegarder la pièce avec les modifications
         await room.save();
@@ -222,136 +200,19 @@ router.put("/editRoom", async (req, res) => {
         // Renvoie une réponse de succès avec la pièce mise à jour
         res.status(200).json({ message: 'Room updated successfully', room });
     } catch (error) {
-        console.error('Error during update:', error); // Log détaillé de l'erreur
+        // console.error('Error during update:', error); // Log détaillé de l'erreur
         // Renvoie une réponse d'erreur en cas de problème
         res.status(500).json({ message: 'Error during update', error });
     }
 });
 
-
-
-
-
-
-/*
-router.put("/editRoom/:id/:name/:surface/:comment", async (req, res) => {
-    try {
-        const room = await Room.findByIdAndUpdate({ _id: req.params.id }, {
-            name: req.params.name,
-            surface: req.params.surface,
-            comment: req.params.comment
-        }, { new: true });
-
-        if (!room) {
-            return res.status(401).json({ message: 'Room not found' });
-        }
-
-        res.status(200).json({ message: 'Room updated successfully', room: room });
-    } catch (error) {
-        res.status(500).json({ message: 'Error during update', error });
-    }
-});*/
-
-
-router.put("/changeRoomName/:id/:name", async (req, res) => {
-    try {
-        const room = await Room.findByIdAndUpdate({ _id: req.params.id }, {
-            name: req.params.name,
-        }, { new: true });
-
-        if (!room) {
-            return res.status(401).json({ message: 'Room not found' });
-        }
-
-        res.status(200).json({ message: 'Room name changed successfully', room: room });
-    } catch (error) {
-        res.status(500).json({ message: 'Error during update', error });
-    }
-});
-
-
-router.put("/setRoomSurface/:id/:surface", async (req, res) => {
-    try {
-        const room = await Room.findByIdAndUpdate({ _id: req.params.id }, {
-            surface: req.params.surface,
-        }, { new: true });
-
-        if (!room) {
-            return res.status(401).json({ message: 'Room not found' });
-        }
-
-        res.status(200).json({ message: 'Room surface updated successfully', room: room });
-    } catch (error) {
-        res.status(500).json({ message: 'Error during update', error });
-    }
-});
-
-
-router.put("/addCommentToRoom/:id/:comment", async (req, res) => {
+//---------Assigner un teammate a un poste de travail--------------//
+router.put("/assignItemToTeammate", async (req, res) => {
     try {
 
-        console.log('totooo',req.params.comment);
-        const room = await Room.findByIdAndUpdate({ _id: req.params.id }, {
-            comment: req.params.comment
-        }, { new: true });
+        const room = await Room.findOne({ _id: req.body.roomId });
 
-        if (!room) {
-            return res.status(401).json({ message: 'Room not found' });
-        }
-
-        res.status(200).json({ message: 'Comment added successfully', room: room });
-    } catch (error) {
-        res.status(500).json({ message: 'Error during addition', error });
-    }
-});
-
-
- 
-
-
-
-router.put("/removeItemFromRoom/:roomId/:itemId", async (req, res) => {
-    try {
-
-        const room = await Room.findOne({ _id: req.params.roomId });
-       
-        if (!room) {
-            return res.status(401).json({ message: 'Room not found' });
-        }
-
-        const index = await room.items.findIndex((item) => item.id === req.params.itemId);
-
-        if (index < 0) {
-            return res.status(401).json({ message: 'Item not found' });
-        }
-
-        const item = room.items[index];
-
-        for(let i = 0; i < item.teammates.length; i++){
-            const teammate = await Teammate.findOne({ _id: item.teammates[i] });
-            const index = await teammate.items.findIndex((e) => e.id === item.id);
-            teammate.items.splice(index, 1);
-            await teammate.save();
-        }
-
-        await room.items.splice(index, 1);
-
-        await room.save();
-
-        res.status(200).json({ message: 'Item removed from room successfully', room: room });
-
-
-    } catch (error) {
-        res.status(500).json({ message: 'Error during update', error });
-    }
-});
-
-
-router.put("/assignItemToTeammate/:roomId/:itemId/:teammateId", async (req, res) => {
-    try {
-
-        const room = await Room.findOne({ _id: req.params.roomId });
-        const teammate = await Teammate.findOne({ _id: req.params.teammateId });
+        const teammate = await Teammate.findOne({ _id: req.body.teammateId });
 
         if (!room) {
             return res.status(401).json({ message: 'Room not found' });
@@ -361,25 +222,21 @@ router.put("/assignItemToTeammate/:roomId/:itemId/:teammateId", async (req, res)
             return res.status(401).json({ message: 'Teammate not found' });
         }
 
-        const index = await room.items.findIndex((item) => item.id === req.params.itemId);
+        const roomIndex = await room.items.findIndex((item) => item._id === req.body.itemId);
 
-        if (index < 0) {
+        if (roomIndex < 0) {
             return res.status(401).json({ message: 'Item not found' });
         }
 
-        const item = room.items[index];
+        const item = room.items[roomIndex];
 
-        if (item.teammates.includes(req.params.teammateId) || teammate.items.includes(req.params.itemId)) {
+        if (item.teammates.includes(req.body.teammateId)) {
             return res.status(401).json({ message: 'Item already assigned to teammate' });
         }
 
-        await item.teammates.push(req.params.teammateId);
-
-        await teammate.items.push(req.params.itemId);
+        await item.teammates.push(req.body.teammateId);
 
         await room.save();
-
-        await teammate.save();
 
         res.status(200).json({ message: 'Item assigned to teammate successfully', room: room });
 
@@ -389,15 +246,13 @@ router.put("/assignItemToTeammate/:roomId/:itemId/:teammateId", async (req, res)
     }
 });
 
-
-
-
-
-router.put("/removeItemFromTeammate/:roomId/:itemId/:teammateId", async (req, res) => {
+ //-----------retire un teamate à un item et inversement-----------//
+ router.put("/removeItemFromTeammate", async (req, res) => {
     try {
 
-        const room = await Room.findOne({ _id: req.params.roomId });
-        const teammate = await Teammate.findOne({ _id: req.params.teammateId });
+        const room = await Room.findOne({ _id: req.body.roomId });
+
+        const teammate = await Teammate.findOne({ _id: req.body.teammateId });
 
         if (!room) {
             return res.status(401).json({ message: 'Room not found' });
@@ -407,29 +262,23 @@ router.put("/removeItemFromTeammate/:roomId/:itemId/:teammateId", async (req, re
             return res.status(401).json({ message: 'Teammate not found' });
         }
 
-        const index = await room.items.findIndex((item) => item.id === req.params.itemId);
+        const itemIndex = await room.items.findIndex((item) => item._id === req.body.itemId);
 
-        if (index < 0) {
+        if (itemIndex < 0) {
             return res.status(401).json({ message: 'Item not found' });
         }
 
-        const item = room.items[index];
+        const item = room.items[itemIndex];
 
-        if (!item.teammates.includes(req.params.teammateId) || !teammate.items.includes(req.params.itemId)) {
+        if (!item.teammates.includes(req.body.teammateId)) {
             return res.status(401).json({ message: 'Item is not assigned to teammate' });
         }
 
-        const index2 = await item.teammates.findIndex((teammate) => teammate._id === req.params.teammateId);
+        const teammateIndex = await item.teammates.findIndex((teammate) => teammate === req.body.teammateId);
 
-        const index3 = await teammate.items.findIndex((item) => item.id === req.params.itemId);
-
-        await item.teammates.splice(index2, 1);
-
-        await teammate.items.splice(index3, 1);
+        await item.teammates.splice(teammateIndex, 1);
 
         await room.save();
-
-        await teammate.save();
 
         res.status(200).json({ message: 'Item removed from teammate successfully', room: room });
 
@@ -439,13 +288,13 @@ router.put("/removeItemFromTeammate/:roomId/:itemId/:teammateId", async (req, re
     }
 });
 
-
-
-router.put("/assignItemToArtisan/:roomId/:itemId/:artisanId", async (req, res) => {
+ //-----------Ajoute un artisan à un item et inversement--------//
+router.put("/assignItemToArtisan", async (req, res) => {
     try {
 
-        const room = await Room.findOne({ _id: req.params.roomId });
-        const artisan = await Artisan.findOne({ _id: req.params.artisanId });
+        const room = await Room.findOne({ _id: req.body.roomId });
+        
+        const artisan = await Artisan.findOne({ _id: req.body.artisanId });
 
         if (!room) {
             return res.status(401).json({ message: 'Room not found' });
@@ -455,22 +304,19 @@ router.put("/assignItemToArtisan/:roomId/:itemId/:artisanId", async (req, res) =
             return res.status(401).json({ message: 'Artisan not found' });
         }
 
-        const index = await room.items.findIndex((item) => item.id === req.params.itemId);
+        const itemIndex = await room.items.findIndex((item) => item._id === req.body.itemId);
 
-        if (index < 0) {
+        if (itemIndex < 0) {
             return res.status(401).json({ message: 'Item not found' });
         }
 
-        const item = room.items[index];
+        const item = room.items[itemIndex];
 
-        console.log('item.artisan', item.artisan, 'req.params.artisanId', req.params.artisanId);
-
-        //Tester si le poste de travail a déjà été attribué à l'artisant   /!\ le test est-il pertinant ?? /!\
-        if (item.artisan === req.params.artisanId) {
-            return res.status(401).json({ message: 'Item already assigned to artisan' });
+        if (item.artisan) {
+            return res.status(401).json({ message: 'Item already assigned to an artisan' });
         }
 
-        item.artisan = req.params.artisanId;
+        item.artisan = req.body.artisanId;
 
         await room.save();
 
@@ -481,70 +327,23 @@ router.put("/assignItemToArtisan/:roomId/:itemId/:artisanId", async (req, res) =
     }
 });
 
-
-
-router.put("/setItemArtisan/:roomId/:itemId/:availability/:trustLevel/:quote/:comment", async (req, res) => {
+//--------Retire un item à un artisan------------//
+router.put("/removeItemFromArtisan", async (req, res) => {
     try {
 
-        const room = await Room.findOne({ _id: req.params.roomId });
-        const artisan = await Artisan.findOne({ _id: req.params.artisanId });
+        const room = await Room.findOne({ _id: req.body.roomId });
 
         if (!room) {
             return res.status(401).json({ message: 'Room not found' });
         }
 
-        if (!artisan) {
-            return res.status(401).json({ message: 'Artisan not found' });
-        }
+        const itemIndex = await room.items.findIndex((item) => item._id === req.body.itemId);
 
-        const index = await room.items.findIndex((item) => item.id === req.params.itemId);
-
-        if (index < 0) {
+        if (itemIndex < 0) {
             return res.status(401).json({ message: 'Item not found' });
         }
 
-        const item = room.items[index];
-
-        console.log('item.artisan', item.artisan, 'req.params.artisanId', req.params.artisanId);
-
-        //Tester si le poste de travail a déjà été attribué à l'artisant   /!\ le test est-il pertinant ?? /!\
-        if (item.artisan === req.params.artisanId) {
-            return res.status(401).json({ message: 'Item already assigned to artisan' });
-        }
-
-        item.artisan.artisanId = req.params.artisanId;
-
-        await room.save();
-
-        res.status(200).json({ message: 'Item assigned to artisan successfully', room: room });
-
-    } catch (error) {
-        res.status(500).json({ message: 'Error during update', error });
-    }
-});
-
-
-
-router.put("/removeItemFromArtisan/:roomId/:itemId/", async (req, res) => {
-    try {
-
-        const room = await Room.findOne({ _id: req.params.roomId });
-
-        if (!room) {
-            return res.status(401).json({ message: 'Room not found' });
-        }
-
-        const index = await room.items.findIndex((item) => item.id === req.params.itemId);
-
-        if (index < 0) {
-            return res.status(401).json({ message: 'Item not found' });
-        }
-
-        const item = room.items[index];
-
-        if (!item.artisan) {
-            return res.status(401).json({ message: 'Item already not assigned to any artisan' });
-        }
+        const item = room.items[itemIndex];
 
         item.artisan = null;
 
@@ -558,13 +357,7 @@ router.put("/removeItemFromArtisan/:roomId/:itemId/", async (req, res) => {
     }
 });
 
-
-
-
-
-
 //----route pour supprimer une room dans la collection room mais aussi dans le tableau d'objectId du projet correspondant--------//
-
 router.delete("/deleteRoom/:id", async (req, res) => {
     try {
         // console.log('Deleting room with ID:', req.params.id); // Log pour vérifier l'ID
@@ -585,6 +378,55 @@ router.delete("/deleteRoom/:id", async (req, res) => {
         res.status(500).json({ message: 'Error during deletion', error });
     }
 });
+
+//----------ROUTES NON UTILISÉES---------/
+//------------Création de room-----------//
+// router.post('/newRoom', async (req, res) => {
+//     try {
+//         const newRoom = new Room({
+
+//             type: req.body.type,
+//            // name: req.body.name,
+//             //items: req.body.items,
+//             //surface: req.body.surface,
+//             //comment: req.body.comment,
+//             //project: req.body.project
+
+//         });
+
+//         await newRoom.save();
+
+//         res.status(201).json({ message: 'Room successfully added', room: newRoom });
+//     } catch (error) {
+//         res.status(500).json({ message: 'Error saving room', error });
+//     }
+// });
+
+// router.delete("/deleteItemFromRoom/:roomId", async (req, res) => {
+//     try {
+
+//         const room = await Room.findOne({ _id: req.params.roomId });
+
+//         if (!room) {
+//             return res.status(401).json({ message: 'Room not found' });
+//         }
+
+//         const itemIndex = await room.items.findIndex((item) => item._id === req.body.itemId);
+
+//         if (itemIndex < 0) {
+//             return res.status(401).json({ message: 'Item not found' });
+//         }
+
+//         await room.items.splice(itemIndex, 1);
+
+//         await room.save();
+
+//         res.status(200).json({ message: 'Item removed from room successfully', room: room });
+
+//     } catch (error) {
+//         res.status(500).json({ message: 'Error during update', error });
+//     }
+// });
 
 
 
