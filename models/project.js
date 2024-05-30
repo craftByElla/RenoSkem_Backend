@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-
 const projectArtisanSchema = mongoose.Schema({                                 
                                          
     artisanId: {type: mongoose.Schema.Types.ObjectId, ref:'artisan', default: null},
@@ -13,6 +12,7 @@ const projectArtisanSchema = mongoose.Schema({
 
 const projectSchema = mongoose.Schema({     // modèle du projet
                                    
+    user: { type: mongoose.Schema.Types.ObjectId, ref:'user', required: true },
     name: { type: String, required: true },
     budget: { type: Number, required: false },
     picture: { type: String, default: '' },

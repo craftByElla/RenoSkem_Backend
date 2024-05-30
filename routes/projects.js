@@ -10,30 +10,36 @@ const Artisan = require('../models/artisan');
 //-------Route pour créer un nouveau projet-----------//
 router.post('/newProject', async (req, res) => {
   try {
-const user = await User.findOne({ token: req.body.token });
+    // console.log('Requête reçue avec les données :', req.body);
 
-const newProject = new Project({
+    const user = await User.findOne({ token: req.body.token });
 
-  name: req.body.name,
-  budget: req.body.budget,
-  location: req.body.location,
-  comment: req.body.comment,
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
-});
+    const userId = user._id;
 
-if (!(newProject && user)) {
-  return res.status(401).json({ message: 'User or project not found' });
-}
+    // console.log('Image reçue :', req.body.picture);
 
-user.projects.push(newProject._id);
+    const newProject = new Project({
+      user: userId,
+      name: req.body.name,
+      budget: req.body.budget,
+      picture: req.body.picture ? `projectIcon/${req.body.picture}` : null, //Stockage du chemin relatif de l'avatar et non l'URL complète
+      location: req.body.location,
+      comment: req.body.comment,
+    });
 
-await user.save();
+    // console.log('Nouveau projet avant sauvegarde :', newProject);
 
-await newProject.save();
+    await newProject.save();
 
-res.status(201).json({ message: 'Project successfully created', project: newProject });
+    // console.log('Nouveau projet après sauvegarde :', newProject);
+
+    res.status(201).json({ message: 'Project successfully created', project: newProject });
   } catch (error) {
-    res.status(500).json({ message: 'Error saving project', error });
+    res.status(500).json({ message: 'Error saving project', error: error.message });
   }
 });
 //--------Route pour modifier un projet------------//
@@ -48,7 +54,7 @@ router.put("/editproject/:id", async (req, res) => {
           name: req.body.name,
           budget: req.body.budget,
           location: req.body.location,
-          picture: req.body.picture,
+          picture: req.body.picture ? `projectIcon/${req.body.picture}` : null, //Stockage du chemin relatif de l'avatar et non l'URL complète
           comment: req.body.comment,
       }, { new: true });
       
@@ -280,9 +286,10 @@ router.get("/getProjectArtisans/:projectId", async (req, res) => {
       return res.status(401).json({ message: 'Project not found' });
     }
 
-    if (!project.artisans.length) {
-      return res.status(401).json({ message: 'No artisan found' });
-    }
+    //It's a trap !!!!!!!!!!!!!!!!!!
+    // if (!project.artisans.length) {
+    //   return res.status(402).json({ message: 'No artisan found' });
+    // } 
 
     res.status(200).json({ message: 'Artisans found', artisans: project.artisans });
   } catch (error) {
@@ -327,7 +334,7 @@ router.put("/editProjectArtisan/:projectId/:artisanId", async (req, res) => {
           return res.status(401).json({ message: 'Project not found' });
         }
 
-        const artisanIndex = await project.artisans.findIndex((artisan) => artisan.artisanId.toString() === req.params.artisanId);
+        const artisanIndex = await project.artisans.findIndex((artisan) => artisan._id.toString() === req.params.artisanId);
         
         if (artisanIndex < 0) {
           return res.status(402).json({ message: 'Artisan not found' });
