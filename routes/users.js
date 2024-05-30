@@ -4,13 +4,13 @@ const router = express.Router();
 const bcrypt = require('bcryptjs'); // Pour le hachage des mots de passe
 const jwt = require('jsonwebtoken'); // Pour la génération de tokens JWT
 const uid2 = require('uid2'); // Pour générer un token unique lors de l'inscription
-const secret_key_JWT = process.env.JWT_SECRET_KEY;
+// const secret_key_JWT = process.env.JWT_SECRET_KEY; //Pas utilisé finalement
 
 require('../models/connection');
 const User = require('../models/user');
 const Skills = require('../models/skills');
 
-
+//-------récupère un profil utilisateur via le token de connexion-----//
     router.get("/getUser/:token", async (req, res) => {
       try {
         const user = await User.findOne({ token: req.params.token }).populate('skills');
@@ -25,7 +25,7 @@ const Skills = require('../models/skills');
       }
     });
 
-
+//------doublon qui est utilisé donc ne pas supprimer----//
     router.get("/getUserByToken/:token", async (req, res) => {
       try {
         const user = await User.findOne({ token: req.params.token }).populate('skills');
@@ -40,71 +40,32 @@ const Skills = require('../models/skills');
       }
     });
 
-
-
+//-------Modifie les infos du user-----------/
 router.put("/editUser/:token", async (req, res) => {
-  try {
+    try {
 
-    const user = await User.findOne({ token: req.params.token });
-    console.log('user', user)
-if (!user) {
-  return res.status(402).json({ message: 'User not found' });
-}
+      const user = await User.findOne({ token: req.params.token });
+      console.log('user', user)
+  if (!user) {
+    return res.status(402).json({ message: 'User not found' });
+  }
 
-else if(req.body.currentPassword){
-    if (!(await bcrypt.compare(req.body.currentPassword, user.password))) {
-        return res.status(401).json({ message: 'Password incorrect' });
-    } else {
-        const hashedPassword = await bcrypt.hash(req.body.newPassword, 10);
-        await User.updateOne({ token: req.params.token }, { name: req.body.name, password: hashedPassword, avatar: req.body.avatar ? `avatar/${req.body.avatar}` : null }, {new: true});
-      }
-} else {
-    await User.updateOne({ token: req.params.token }, { name: req.body.name, avatar: req.body.avatar ? `avatar/${req.body.avatar}` : null  }, {new: true})
-}
+  else if(req.body.currentPassword){
+      if (!(await bcrypt.compare(req.body.currentPassword, user.password))) {
+          return res.status(401).json({ message: 'Password incorrect' });
+      } else {
+          const hashedPassword = await bcrypt.hash(req.body.newPassword, 10);
+          await User.updateOne({ token: req.params.token }, { name: req.body.name, password: hashedPassword, avatar: req.body.avatar ? `avatar/${req.body.avatar}` : null }, {new: true});
+        }
+  } else {
+      await User.updateOne({ token: req.params.token }, { name: req.body.name, avatar: req.body.avatar ? `avatar/${req.body.avatar}` : null  }, {new: true})
+  }
 
-res.status(200).json({ message: 'User profile updated successfully', user: user });
-} catch (error) {
-res.status(500).json({ message: 'Error during update', error });
-}
+  res.status(200).json({ message: 'User profile updated successfully', user: user });
+  } catch (error) {
+  res.status(500).json({ message: 'Error during update', error });
+  }
 });
-
-
-
-    router.put("/changePassword/:token/:password/", async (req, res) => {
-      try {
-        const user = await User.findByIdAndUpdate({ token: req.params.token }, {password: bcrypt.hash(req.params.password, 10)}, {new: true});
-    
-        if (!user) {
-          return res.status(401).json({ message: 'User not found' });
-        }
-
-        //User.updateOne({_id: req.params.id}, {password: bcrypt.hash(req.params.password, 10)});
-    
-        res.status(200).json({ message: 'Password changed successfully', user: user });
-      } catch (error) {
-        res.status(500).json({ message: 'Error during password change', error });
-      }
-    });
-
-
-
-    router.put("/changeEmail/:token/:email/", async (req, res) => {
-      try {
-        const user = await User.findByIdAndUpdate({ token: req.params.token }, {email: req.params.email}, {new: true});
-
-        if (!user) {
-          return res.status(401).json({ message: 'User not found' });
-        }
-
-       // await User.updateOne({_id: req.params.id}, {email: req.params.email});
-    
-        res.status(200).json({ message: 'Skills added to user successfully', user: user });
-      } catch (error) {
-        res.status(500).json({ message: 'Error during addition', error });
-      }
-    });
-
-
 
 //---------LIE LES SKILLS A UN USER----------//
 router.put("/addSkillsToUser/:token/:skillsId/", async (req, res) => {
@@ -124,27 +85,60 @@ router.put("/addSkillsToUser/:token/:skillsId/", async (req, res) => {
   }
 });
 
+//---------SUPPRIME UN UTILISATEUR----------------// à mettre à jour
+router.delete("/deleteUserAccount/:token", async (req, res) => {
+  try {
 
-//---------SUPPRIME UN UTILISATEUR----------------//
+    const user = await User.findOne({ token: req.params.token }).populate('projects');
 
-  router.delete("/deleteUser/:token", async (req, res) => {
-    try {
-      const user = await User.findByIdAndDelete({ token: req.params.token });
-  
-      if (!user) {
-        return res.status(401).json({ message: 'User not found' });
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+
+    const projects = user.projects;
+
+    if (projects.length) {
+
+      for (let i = 0; i < projects.length; i++) {
+
+        const project = projects[i];
+
+        if (project.rooms.length) {
+
+          for (let j = 0; j < project.rooms.length; j++) {
+
+            await Room.deleteOne({ _id: project.rooms[j] });
+
+          }
+
+        }
+
+        await Project.deleteOne({ _id: project._id });
+
       }
 
-      //await User.deleteOne({_id: req.params.id});
-  
-      res.status(200).json({ message: 'User account deleted successfully', user: user });
-    } catch (error) {
-      res.status(500).json({ message: 'Error during deletion', error });
     }
-  });
-  
 
+    for (let i = 0; i < user.teammates; i++) {
 
+      await Teammate.deleteOne({ _id: user.teammates[i] });
+
+    }
+
+    for (let i = 0; i < user.artisans; i++) {
+
+      await Artisan.deleteOne({ _id: user.artisans[i] });
+
+    }
+
+    await User.deleteOne({ _id: user._id });
+
+    res.status(200).json({ message: 'Room removed from project successfully', project: project });
+
+  } catch (error) {
+    res.status(500).json({ message: 'Error during update', error });
+  }
+});
 
 //----ROUTE INSCRIPTION UTILISATEUR-----------//
 router.post('/signup', async (req, res) => {
@@ -172,10 +166,6 @@ router.post('/signup', async (req, res) => {
     res.status(500).json({ message: 'Error registering user', error });
   }
 });
-
-
- 
-
 
 //----ROUTE CONNEXION UTILISATEUR-----------//
 router.post('/login', async (req, res) => {
@@ -209,60 +199,112 @@ router.post('/login', async (req, res) => {
   }
 });
 
-
-
 //-------ROUTE LOGOUT-----//
 router.get('/logout', (req, res) => {
   // Supposer que le client supprime le token en appuyant sur logout on supprimerait le token du localstorage
   res.status(200).json({ message: 'Logged out successfully' });
 });
 
+//-------ROUTES NON UTILISEES POUR LINSTANT---------//
+//-----------Récupération des projets d'un utilisateur----------------//
+// router.get("/getUserProjects/:token", async (req, res) => {
+//   try {
 
+//     const user = await User.findOne({ token: req.params.token });
 
+//     if (!user) {
 
-router.get("/getUserArtisansByField", async (req, res) => {
-  try {
+//       return res.status(401).json({ message: 'User not found' });
 
-    const user = await User.findOne({ token: req.body.token }).populate('artisans');
+//     }
 
-    if (!user) {
-      return res.status(401).json({ message: 'User not found' });
-    }
+//     if (!user.projects.length) {
 
-    if (!user.artisans.length) {
-      return res.status(401).json({ message: 'No artisan found' });
-    }
+//       return res.status(401).json({ message: 'No project found' });
 
-    const artisans = user.artisans.filter(artisan => artisan.field === req.body.field);
+//     }
 
-    res.status(200).json({ message: 'Artisan(s) found', artisans: artisans });
-  } catch (error) {
-    res.status(500).json({ message: 'Error during search', error });
-  }
+//     res.status(200).json({ message: 'Projects found', projects: user.projects });
+//   } catch (error) {
+//     res.status(500).json({ message: 'Error during search', error });
+//   }
+// });
 
-});
+// //----------------Récupération des coéquipiers d'un utilisateur----------------//
+// router.get("/getUserTeammates/:token", async (req, res) => {
+//   try {
 
-router.get("/getUserProjects/:token", async (req, res) => {
-  try {
-const user = await User.findOne({ token: req.params.token });
+//     const user = await User.findOne({ token: req.params.token }).populate('teammates');
 
-if (!user) {
+//     if (!user) {
 
-  return res.status(401).json({ message: 'User not found' });
+//       return res.status(401).json({ message: 'User not found' });
 
-}
+//     }
 
-if (!user.projects.length) {
+//     if (!user.teammates.length) {
 
-  return res.status(401).json({ message: 'No project found' });
+//       return res.status(401).json({ message: 'No teammate found' });
 
-}
+//     }
 
-res.status(200).json({ message: 'Projects found', projects: user.projects });
-  } catch (error) {
-    res.status(500).json({ message: 'Error during search', error });
-  }
-});
+//     res.status(200).json({ message: 'Teammates found', teammates: user.teammates });
+//   } catch (error) {
+//     res.status(500).json({ message: 'Error during search', error });
+//   }
+// });
+
+// //-----------------------Récupération des artisans d'un utilisateur-----------------//
+// router.get("/getUserArtisans/:token", async (req, res) => {
+//   try {
+
+//     const user = await User.findOne({ token: req.params.token }).populate('artisans');
+
+//     if (!user) {
+
+//       return res.status(401).json({ message: 'User not found' });
+
+//     }
+
+//     if (!user.artisans.length) {
+
+//       return res.status(401).json({ message: 'No artisan found' });
+
+//     }
+
+//     res.status(200).json({ message: 'Artisans found', artisans: user.artisans });
+//   } catch (error) {
+//     res.status(500).json({ message: 'Error during search', error });
+//   }
+// });
+
+// //-----------Récupération des projets d'un utilisateur selon un domaine d'activité--------------//
+// router.get("/getUserArtisansByField/:token", async (req, res) => {
+//   try {
+
+//     const user = await User.findOne({ token: req.params.token }).populate('artisans');
+
+//     if (!user) {
+
+//       return res.status(401).json({ message: 'User not found' });
+
+//     }
+
+//     if (!user.artisans.length) {
+
+//       return res.status(401).json({ message: 'No artisan found' });
+
+//     }
+
+//     const artisans = user.artisans.filter(artisan => artisan.field === req.body.field);
+
+//     res.status(200).json({ message: 'Artisan(s) found', artisans: artisans });
+//   } catch (error) {
+//     res.status(500).json({ message: 'Error during search', error });
+//   }
+
+// });
+
 
 module.exports = router;
 
