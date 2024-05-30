@@ -15,6 +15,7 @@ const uid2 = require('uid2');
         // exemple await Project.findByIdAndUpdate(room.project, { $pull: { rooms: room._id } });
 
 router.post('/updateRooms', async (req, res) => {
+
     const { projectId, rooms } = req.body; // Récupérer l'ID du projet et les nouvelles pièces du corps de la requête
     // console.log('Updating rooms for project:', projectId, rooms);
 

@@ -5,10 +5,7 @@ require('../models/connection');
 const Project = require('../models/project');
 const Room = require('../models/room');
 const User = require('../models/user');
-
-
-
-
+const Artisan = require('../models/artisan');
 
 //-------Route pour créer un nouveau projet-----------//
 router.post('/newProject', async (req, res) => {
@@ -419,6 +416,324 @@ router.get("/getProjectPlanning/:projectId", async (req, res) => {
   }
 });
 
+
+//----------------------Fonction pour gérer l'odre des tache------------//
+function taskSort(project){
+  console.log('taskSort - 1: Start of taskSort');
+
+  const rooms = project.rooms;
+  const roomsPlannings = [];
+  const projectPlanning = [];
+  console.log('taskSort - 2: Initial variables set');
+
+  for(let i = 0; i < rooms.length; i++){ 
+      console.log(`taskSort - 3: Processing room ${i}`);
+
+      let step = 1;  
+
+      let dependenciesObj = {
+          "Chauffage": ["Démolition"],
+          "Cloisonnement/Plâtrage": ["Démolition"],
+          "Démolition": [],
+          "Électricité": ["Démolition", "Cloisonnement/Plâtrage"],
+          "Étanchéité": ["Toiture"],
+          "Façade": ["Étanchéité"],
+          "Fondations": ["Démolition"],
+          "Installation cuisine/SDB": ["Plomberie", "Électricité", "Cloisonnement/Plâtrage", "Revêtement muraux"],
+          "Isolation": ["Cloisonnement/Plâtrage"],
+          "Maçonnerie": ["Fondations"],
+          "Menuiserie": ["Démolition"],
+          "Montage de meuble": ["Peinture"],
+          "Peinture": ["Cloisonnement/Plâtrage", "Menuiserie"],
+          "Plomberie": ["Démolition"],
+          "Revêtement muraux": ["Cloisonnement/Plâtrage"],
+          "Revêtement sol": ["Démolition", "Fondations"],
+          "Revêtements extérieurs": ["Démolition"],
+          "Toiture": ["Maçonnerie"],
+          "Ventilation": ["Démolition"]
+      }; 
+      console.log('taskSort - 4: Dependencies set');
+
+      let roomSortedTasks = {
+          "Chauffage": { step: -1, diy: true, artisan: null, teammates: [] } ,
+          "Cloisonnement/Plâtrage": { step: -1, diy: true, artisan: null, teammates: [] },
+          "Démolition": { step: -1, diy: true, artisan: null, teammates: [] },
+          "Électricité": { step: -1, diy: true, artisan: null, teammates: [] },
+          "Étanchéité": { step: -1, diy: true, artisan: null, teammates: [] },
+          "Façade": { step: -1, diy: true, artisan: null, teammates: [] },
+          "Fondations": { step: -1, diy: true, artisan: null, teammates: [] },
+          "Installation cuisine/SDB": { step: -1, diy: true, artisan: null, teammates: [] },
+          "Isolation": { step: -1, diy: true, artisan: null, teammates: [] },
+          "Maçonnerie": { step: -1, diy: true, artisan: null, teammates: [] },
+          "Menuiserie": { step: -1, diy: true, artisan: null, teammates: [] },
+          "Montage de meuble": { step: -1, diy: true, artisan: null, teammates: [] },
+          "Peinture": { step: -1, diy: true, artisan: null, teammates: [] },
+          "Plomberie": { step: -1, diy: true, artisan: null, teammates: [] },
+          "Revêtement muraux": { step: -1, diy: true, artisan: null, teammates: [] },
+          "Revêtement sol": { step: -1, diy: true, artisan: null, teammates: [] },
+          "Revêtements extérieurs": { step: -1, diy: true, artisan: null, teammates: [] },
+          "Toiture": { step: -1, diy: true, artisan: null, teammates: [] },
+          "Ventilation": { step: -1, diy: true, artisan: null, teammates: [] }
+      };
+      console.log('taskSort - 5: roomSortedTasks initialized');
+      
+      if(rooms[i].items && rooms[i].items.length > 0){
+          console.log(`taskSort - 6: Room ${i} has items`);
+
+          const tasks = rooms[i].items.map(item => item.field);
+          console.log('taskSort - 7: Tasks extracted', tasks);
+
+          for(let key in dependenciesObj){  
+              console.log('taskSort - 8: Checking dependencies for key:', key);                                   
+              if(!tasks.includes(key)){
+                  delete dependenciesObj[key];
+                  for(let key2 in dependenciesObj){
+                      const index = dependenciesObj[key2].indexOf(key)
+                      if(index > -1){
+                          dependenciesObj[key2].splice(index,1);
+                      }
+                  }        
+              }
+          }
+          console.log('taskSort - 9: Dependencies filtered', dependenciesObj);
+         
+          while(Object.keys(dependenciesObj).length){   
+              console.log('taskSort - 10: Dependencies left', dependenciesObj);                                                                 
+ 
+              let completedTasks = [];                                                         
+              for(let key in dependenciesObj){  
+                  console.log('taskSort - 11: Checking if key has no dependencies:', key);                                   
+                  if(dependenciesObj[key].length === 0){              
+                      console.log('taskSort - 12: Key has no dependencies:', key);             
+                      roomSortedTasks[key].step = step;
+                      for(let j = 0; j < rooms[i].items.length; j++){    
+                          console.log(`taskSort - 13: Checking room items ${j}`);              
+                          if(key === rooms[i].items[j].field){        
+                              console.log('taskSort - 14: Found matching task');              
+                              roomSortedTasks[key].diy = rooms[i].items[j].diy;
+                              roomSortedTasks[key].artisan = rooms[i].items[j].artisan;
+                              roomSortedTasks[key].teammates = rooms[i].items[j].teammates;                                                        
+                              break;
+                          }   
+                          console.log('taskSort - 15: Completed room item check');
+                      }       
+                      completedTasks.push(key); 
+                      console.log('taskSort - 16: Added to completedTasks:', completedTasks);                        
+                  }
+                  console.log('taskSort - 17: Key check completed');
+              }
+              console.log('taskSort - 18: Completed tasks check done', completedTasks);
+
+              for(let key of completedTasks){                       
+                  console.log('taskSort - 19: Deleting completed task from dependencies:', key);                              
+                  delete dependenciesObj[key];   
+                  console.log('taskSort - 20: Dependencies left', Object.keys(dependenciesObj).length);                 
+                  if(Object.keys(dependenciesObj).length){
+                      for(let key2 in dependenciesObj){   
+                          console.log('taskSort - 21: Updating dependencies for:', key2);                                            
+                          const index = dependenciesObj[key2].indexOf(key)
+                          if(index > -1){
+                              console.log('taskSort - 22: Removing dependency:', key); 
+                              dependenciesObj[key2].splice(index,1);
+                          }
+                          console.log('taskSort - 23: Dependency update completed');
+                      }
+                  }
+                  console.log('taskSort - 24: Completed dependency update');
+              }
+              console.log('taskSort - 25: Step completed, moving to next step');
+              step++;
+          }
+          console.log('taskSort - 26: All dependencies resolved for room');
+          roomsPlannings.push({ type: rooms[i].type, name: rooms[i].name, items: roomSortedTasks });
+          console.log('taskSort - 27: Room planning added:', roomsPlannings);
+      } else {
+          console.log(`taskSort - 6: Room ${i} has no items or items is undefined`);
+      }
+  }
+
+  console.log('taskSort - 28: All rooms processed');
+  if (roomsPlannings.length === 0) {
+      console.log('taskSort - 29: No room plannings to process');
+      return [];
+  }
+  let maxStepChauffage = roomsPlannings[0].items["Chauffage"].step;
+  let maxStepElectricite = roomsPlannings[0].items["Électricité"].step;
+  let maxStepFacade = roomsPlannings[0].items["Façade"].step;
+  let maxStepToiture = roomsPlannings[0].items["Toiture"].step; 
+  console.log('taskSort - 30: Initial max steps set');
+
+  for(let i = 1; i < roomsPlannings.length; i++){
+      console.log(`taskSort - 31: Checking room planning ${i}`);
+      maxStepChauffage = roomsPlannings[i].items["Chauffage"].step > maxStepChauffage ? roomsPlannings[i].items["Chauffage"].step : maxStepChauffage;
+      maxStepElectricite = roomsPlannings[i].items["Électricité"].step > maxStepElectricite ? roomsPlannings[i].items["Électricité"].step : maxStepElectricite;
+      maxStepFacade = roomsPlannings[i].items["Façade"].step > maxStepFacade ? roomsPlannings[i].items["Façade"].step : maxStepFacade;
+      maxStepToiture = roomsPlannings[i].items["Toiture"].step > maxStepToiture ? roomsPlannings[i].items["Toiture"].step : maxStepToiture;
+      console.log('taskSort - 32: Updated max steps:', maxStepChauffage, maxStepElectricite, maxStepFacade, maxStepToiture);
+  }
+            
+  for(let i = 0; i < roomsPlannings.length; i++){
+      console.log(`taskSort - 33: Updating room planning steps for room ${i}`);
+      roomsPlannings[i].items["Chauffage"].step = maxStepChauffage;
+      roomsPlannings[i].items["Électricité"].step = maxStepElectricite;
+      roomsPlannings[i].items["Façade"].step = maxStepFacade;
+      roomsPlannings[i].items["Toiture"].step = maxStepToiture;
+
+      if(roomsPlannings[i].items["Installation cuisine/SDB"].step > 0){
+          roomsPlannings[i].items["Installation cuisine/SDB"].step = maxStepElectricite >= roomsPlannings[i].items["Installation cuisine/SDB"].step ? maxStepElectricite + 1 : roomsPlannings[i].items["Installation cuisine/SDB"].step;        
+      }
+      console.log('taskSort - 34: Updated Installation cuisine/SDB step');
+
+      if(roomsPlannings[i].items["Étanchéité"].step > 0){
+          roomsPlannings[i].items["Étanchéité"].step = maxStepToiture >= roomsPlannings[i].items["Étanchéité"].step ? maxStepToiture + 1 : roomsPlannings[i].items["Étanchéité"].step;
+          roomsPlannings[i].items["Façade"].step = roomsPlannings[i].items["Étanchéité"].step >= roomsPlannings[i].items["Façade"].step ? roomsPlannings[i].items["Étanchéité"].step + 1 : roomsPlannings[i].items["Façade"].step;
+      }
+      console.log('taskSort - 35: Updated Étanchéité and Façade steps');
+  }
+  console.log('taskSort - 36: Steps updated for all rooms');
+
+  let steps = 0;
+  for(let i = 0; i < roomsPlannings.length; i++){
+      console.log(`taskSort - 37: Calculating total steps for room ${i}`);
+      for(let key in roomsPlannings[i].items){
+          steps = roomsPlannings[i].items[key].step > steps ? roomsPlannings[i].items[key].step : steps;
+          console.log('taskSort - 38: Updated steps:', steps);
+      }
+  }
+
+  for(let i = 0; i < steps; i++){
+      projectPlanning.push({ step: i + 1, items: []});
+      console.log('taskSort - 39: Added step to projectPlanning:', projectPlanning);
+  }
+
+  for(let i = 0; i < roomsPlannings.length; i++){
+      for(let key in roomsPlannings[i].items){
+          if (roomsPlannings[i].items[key].step > 0) {
+              const item = {     
+                  field: key,
+                  type: roomsPlannings[i].type,
+                  name: roomsPlannings[i].name,
+                  diy: roomsPlannings[i].items[key].diy,
+                  artisan: roomsPlannings[i].items[key].artisan,
+                  teammates: roomsPlannings[i].items[key].teammates
+              };  
+              console.log('taskSort - 40: Adding item to projectPlanning:', item);  
+              projectPlanning[roomsPlannings[i].items[key].step - 1].items.push(item); 
+          }          
+          console.log('taskSort - 41: Item added to projectPlanning');
+      }
+  }
+
+  console.log('taskSort - 42: End of taskSort');
+  return projectPlanning;
+}
+
+  
+  
+  
+router.get("/getProjectPlanning/:projectId", async (req, res) => {
+  try {
+      console.log('Route - 1: Request received for projectId:', req.params.projectId);
+
+      const project = await Project.findOne({ _id: req.params.projectId }).populate('rooms');
+      console.log('Route - 2: Project retrieved:', project);
+
+      if (!project) {
+          console.log('Route - 3: Project not found');
+          return res.status(401).json({ message: 'Project not found' });
+      }
+
+      const projectPlanning = taskSort(project);
+      console.log('Route - 4: Project planning generated');
+
+      res.status(200).json({ message: 'Project planning generated successfully', Planning: projectPlanning });
+  } catch (error) {
+      console.error('Route - 5: Error during generation', error);
+      res.status(500).json({ message: 'Error during generation', error });
+  }
+});
+
+
+
+
+router.put("/addArtisanToProject", async (req, res) => {
+  try {
+console.log('req.body: ', req.body)
+    const projectArtisan = {
+
+      artisanId: req.body.artisanId,
+      availability: req.body.availability,
+      trustLevel: req.body.trustLevel,
+      quote: req.body.quote,
+      comment: req.body.comment
+
+    }
+
+    const project = await Project.findByIdAndUpdate({ _id: req.body.projectId }, { $push: { artisans: projectArtisan } }, { new: true, useFindAndModify: false });
+
+    if (!project) {
+      return res.status(401).json({ message: 'Project not found' });
+    }
+
+    res.status(200).json({ message: 'Project updated successfully', project: project });
+  } catch (error) {
+    res.status(500).json({ message: 'Error during update', error });
+  }
+});
+
+ 
+
+router.get("/getProjectArtisans/:projectId", async (req, res) => {
+  try {
+
+    const project = await Project.findOne({ _id: req.params.projectId }).populate({
+      path: 'artisans.artisanId',
+      model: Artisan
+    });
+    // console.log(project.artisans[0].artisanId)
+
+    if (!project) {
+      return res.status(401).json({ message: 'Project not found' });
+    }
+
+    //It's a trap !!!!!!!!!!!!!!!!!!
+    // if (!project.artisans.length) {
+    //   return res.status(402).json({ message: 'No artisan found' });
+    // } 
+
+    res.status(200).json({ message: 'Artisans found', artisans: project.artisans });
+  } catch (error) {
+    res.status(500).json({ message: 'Error during search', error });
+  }
+});
+
+router.put("/editProjectArtisan/:projectId/:artisanId", async (req, res) => {
+  try {
+    const project = await Project.findOne({ _id: req.params.projectId });
+    
+    if (!project) {
+      return res.status(401).json({ message: 'Project not found' });
+    }
+    
+    const index = await project.artisans.findIndex((artisan) => artisan._id.toString() === req.params.artisanId);
+    console.log(req.body)
+    console.log(index)
+    if (index < 0) {
+      return res.status(402).json({ message: 'Artisan not found' });
+    }
+    
+    project.artisans[index].availability = req.body.availability;
+    project.artisans[index].trustLevel = req.body.trustLevel;
+    project.artisans[index].quote = req.body.quote;
+    project.artisans[index].comment = req.body.comment;
+    
+    await project.save();
+    
+    res.status(200).json({ message: 'Project updated successfully', project: project });
+      } catch (error) {
+        res.status(500).json({ message: 'Error during update', error });
+      }
+    });
  
 //-----à refaire sans le token car il est deja dans le projet-------//
 // /-----------------------------------------------Suppression d'un projet-------------------------------------------//
@@ -518,6 +833,30 @@ router.put("/editProjectArtisan", async (req, res) => {
   }
 });
 
+    router.put("/removeArtisanFromProject/:projectId/:artisanId", async (req, res) => {
+      try {
+    
+        const project = await Project.findOne({ _id: req.params.projectId });
+        console.log('project', project)
+        if (!project) {
+          return res.status(401).json({ message: 'Project not found' });
+        }
+
+        const artisanIndex = await project.artisans.findIndex((artisan) => artisan._id.toString() === req.params.artisanId);
+        
+        if (artisanIndex < 0) {
+          return res.status(402).json({ message: 'Artisan not found' });
+        }
+        console.log('artisanIndex', artisanIndex)
+        await project.artisans.splice(artisanIndex, 1);
+    
+        await project.save();
+    
+        res.status(200).json({ message: 'Artisans removed successfully', project: project });
+      } catch (error) {
+        res.status(500).json({ message: 'Error during removal', error });
+      }
+    });
 
 //------------------------------------------Suppression d'un artisan lié à un projet---------------------------------//
 router.put("/removeArtisanFromProject", async (req, res) => {

@@ -9,8 +9,8 @@ const Artisan = require('../models/artisan');
 //--------------------------------Création d'un nouvel artisan-------------------------//
 router.post('/newArtisan', async (req, res) => {
   try {
-
-    const user = await User.findOne({ token: req.body.token });
+    //changeer le fetch lié à artisansScreenProject pour décommenter 
+    //const user = await User.findOne({ token: req.body.token });
 
     const newArtisan = new Artisan({
 
@@ -23,13 +23,13 @@ router.post('/newArtisan', async (req, res) => {
 
     await newArtisan.save();
 
-    if (!(newArtisan && user)) {
-      return res.status(401).json({ message: 'User or artisan not found' });
-    }
+    // if (!(newArtisan && user)) {
+    //   return res.status(401).json({ message: 'User or artisan not found' });
+    // }
 
-    user.artisans.push(newArtisan._id);
+    //user.artisans.push(newArtisan._id);
 
-    await user.save();
+    //await user.save();
 
     res.status(201).json({ message: 'Artisan successfully created', artisan: newArtisan });
   } catch (error) {
