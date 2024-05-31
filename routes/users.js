@@ -85,6 +85,28 @@ router.put("/addSkillsToUser/:token/:skillsId/", async (req, res) => {
   }
 });
 
+
+router.put("/addskillstouser", async (req, res) => {
+  try {
+
+    const user = await User.findOne({ token: req.body.token });
+
+    const skills = await Skills.findOne({ _id: req.body.skillsId });
+
+    if (!(user && skills)) {
+
+      return res.status(401).json({ message: 'User or skills not found' });
+
+    }
+
+    await User.updateOne({ token: req.body.token }, { skills: req.body.skillsId }, { new: true });
+
+    res.status(200).json({ message: 'Skills added successfully', user: user });
+  } catch (error) {
+    res.status(500).json({ message: 'Error during addition', error });
+  }
+});
+
 //---------SUPPRIME UN UTILISATEUR----------------// à mettre à jour
 router.delete("/deleteUserAccount/:token", async (req, res) => {
   try {
