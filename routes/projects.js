@@ -38,6 +38,26 @@ router.post('/newProject', async (req, res) => {
 });
 
 
+router.get("/getUserProjects/:token", async (req, res) => {
+  try {
+
+    const user = await User.findOne({token: req.body.token});
+
+    const userId = user._id;
+
+    const projects = await Project.find({ user: userId });
+
+    if (!projects) {
+      return res.status(401).json({ message: 'No project found' });
+    }
+
+    res.status(200).json({ message: 'Projects found', projects: projects });
+  } catch (error) {
+    res.status(500).json({ message: 'Error during search', error });
+  }
+});
+
+
     router.get("/getProject/:id", async (req, res) => {
       try {
         const project = await Project.findOne({ _id: req.params.id });
